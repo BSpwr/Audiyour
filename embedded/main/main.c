@@ -1,55 +1,145 @@
-/* Play music from Bluetooth device
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "nvs.h"
+#include "nvs_flash.h"
+#include "esp_system.h"
 #include "esp_log.h"
+
+#include "esp_bt.h"
+#include "esp_bt_main.h"
+#include "esp_bt_device.h"
+#include "esp_gap_bt_api.h"
+#include "esp_a2dp_api.h"
+#include "esp_avrc_api.h"
+#include "driver/i2s.h"
+
+#include "esp_gap_ble_api.h"
+#include "esp_gatts_api.h"
+#include "esp_bt_defs.h"
+#include "esp_gatt_common_api.h"
+
+
+// --
+#include "esp_log.h"
+#include "esp_bt.h"
+#include "esp_bt_main.h"
+#include "esp_bt_device.h"
+#include "esp_gap_bt_api.h"
+#include "esp_a2dp_api.h"
+#include "esp_avrc_api.h"
+#include "esp_peripherals.h"
+
 #include "nvs_flash.h"
 #include "audio_element.h"
 #include "audio_pipeline.h"
 #include "audio_event_iface.h"
-#include "audio_common.h"
 #include "i2s_stream.h"
-#include "esp_peripherals.h"
-#include "periph_touch.h"
-#include "periph_adc_button.h"
-#include "periph_button.h"
-#include "board.h"
+#include "input_key_service.h"
 #include "filter_resample.h"
-#include "audio_mem.h"
-#include "bluetooth_service.h"
-#include "audio_hal.h"
+#include "periph_touch.h"
+#include "board.h"
+#include "a2dp_stream.h"
+#include "driver/uart.h"
 
-// TODO: cleanup failing BLE code
-// ----------------------------------------------
+#include "equalizer.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "esp_system.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
-#include "esp_bt.h"
+#define UART_MONITOR_BAUDRATE (115200)
 
-#include "esp_gap_ble_api.h"
-#include "esp_gatts_api.h"
-#include "esp_bt_main.h"
-#include "esp_gatt_common_api.h"
+#define MAX_EQ_GAIN (15)
+#define MIN_EQ_GAIN (-20)
 
-#include "ble_gatt.h"
+// ------ A2DP TASK freeRTOS
+#define A2DP_STREAM_TASK_STACK      (2 * 1024)
+#define A2DP_STREAM_TASK_CORE       (0)
+#define A2DP_STREAM_TASK_PRIO       (22)
+#define A2DP_STREAM_TASK_IN_EXT     (true)
+#define A2DP_STREAM_QUEUE_SIZE      (1024)
+// ------
+
+// ------ EQUALIZER TASK freeRTOS
+#define EQUALIZER_TASK_STACK        (4 * 1024)
+#define EQUALIZER_TASK_CORE         (0)
+#define EQUALIZER_TASK_PRIO         (5)
+#define EQUALIZER_RINGBUFFER_SIZE   (8 * 1024)
+// ------
+
+static const char *TAG = "BLUETOOTH_EXAMPLE";
+static esp_periph_handle_t bt_periph = NULL;
+
+static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
+{
+    if (evt->type == INPUT_KEY_SERVICE_ACTION_CLICK_RELEASE) {
+        ESP_LOGI(TAG, "[ * ] input key id is %d", (int)evt->data);
+        switch ((int)evt->data) {
+            case INPUT_KEY_USER_ID_PLAY:
+                ESP_LOGI(TAG, "[ * ] [Play] play");
+                periph_bt_play(bt_periph);
+                break;
+            case INPUT_KEY_USER_ID_SET:
+                ESP_LOGI(TAG, "[ * ] [Set] pause");
+                periph_bt_pause(bt_periph);
+                break;
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+            case INPUT_KEY_USER_ID_VOLUP:
+                ESP_LOGI(TAG, "[ * ] [long Vol+] Vol+");
+                periph_bt_volume_up(bt_periph);
+                break;
+            case INPUT_KEY_USER_ID_VOLDOWN:
+                ESP_LOGI(TAG, "[ * ] [long Vol-] Vol-");
+                periph_bt_volume_down(bt_periph);
+                break;
+#endif
+        }
+    } else if (evt->type == INPUT_KEY_SERVICE_ACTION_PRESS) {
+        ESP_LOGI(TAG, "[ * ] input key id is %d", (int)evt->data);
+        switch ((int)evt->data) {
+            case INPUT_KEY_USER_ID_VOLUP:
+                ESP_LOGI(TAG, "[ * ] [long Vol+] next");
+                periph_bt_avrc_next(bt_periph);
+                break;
+            case INPUT_KEY_USER_ID_VOLDOWN:
+                ESP_LOGI(TAG, "[ * ] [long Vol-] Previous");
+                periph_bt_avrc_prev(bt_periph);
+                break;
+        }
+
+    }
+    return ESP_OK;
+}
+// --
+
+audio_element_handle_t equalizer;
+
+#define BT_BLE_COEX_TAG     "BT_BLE_COEX"
+#define BT_DEVICE_NAME      "Audiyour"
+
+// --------------------------------------------------------------
+enum
+{
+    IDX_SVC,
+    IDX_CHAR_EQ_GAINS,
+    IDX_CHAR_EQ_GAINS_VAL,
+    // IDX_CHAR_CFG_A,
+
+    IDX_CHAR_INPUT_GAINS,
+    IDX_CHAR_INPUT_GAINS_VAL,
+
+    IDX_CHAR_OUTPUT_GAIN,
+    IDX_CHAR_OUTPUT_GAIN_VAL,
+
+    HRS_IDX_NB,
+};
 
 #define GATTS_TABLE_TAG "GATTS_TABLE_DEMO"
 
 #define PROFILE_NUM                 1
 #define PROFILE_APP_IDX             0
 #define ESP_APP_ID                  0x55
-#define SAMPLE_DEVICE_NAME          "ESP_GATTS_DEMO"
+
 #define SVC_INST_ID                 0
 
 /* The max length of characteristic value. When the GATT client performs a write or prepare write operation,
@@ -73,28 +163,6 @@ typedef struct {
 
 static prepare_type_env_t prepare_write_env;
 
-// #define CONFIG_SET_RAW_ADV_DATA
-#ifdef CONFIG_SET_RAW_ADV_DATA
-static uint8_t raw_adv_data[] = {
-        /* flags */
-        0x02, 0x01, 0x06,
-        /* tx power*/
-        0x02, 0x0a, 0xeb,
-        /* service uuid */
-        0x03, 0x03, 0xFF, 0x00,
-        /* device name */
-        0x0f, 0x09, 'E', 'S', 'P', '_', 'G', 'A', 'T', 'T', 'S', '_', 'D','E', 'M', 'O'
-};
-static uint8_t raw_scan_rsp_data[] = {
-        /* flags */
-        0x02, 0x01, 0x06,
-        /* tx power */
-        0x02, 0x0a, 0xeb,
-        /* service uuid */
-        0x03, 0x03, 0xFF,0x00
-};
-
-#else
 static uint8_t service_uuid[16] = {
     /* LSB <--------------------------------------------------------------------------------> MSB */
     //first uuid, 16bit, [12],[13] is the value
@@ -134,7 +202,6 @@ static esp_ble_adv_data_t scan_rsp_data = {
     .p_service_uuid      = service_uuid,
     .flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT),
 };
-#endif /* CONFIG_SET_RAW_ADV_DATA */
 
 static esp_ble_adv_params_t adv_params = {
     .adv_int_min         = 0x20,
@@ -184,7 +251,7 @@ static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
 // static const uint8_t char_prop_write               = ESP_GATT_CHAR_PROP_BIT_WRITE;
 static const uint8_t char_prop_read_write   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ;
 // static const uint8_t heart_measurement_ccc[2]      = {0x00, 0x00};
-static int8_t equalizer_gains[10]    = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+static int8_t equalizer_gains[10]    = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 // {bluetooth_input_gain, line_in_input_gain}
 static int8_t source_gains[2]        = {0x0, 0x0};
 static int8_t output_gain         = 0x0;
@@ -358,22 +425,10 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
 {
     switch (event) {
         case ESP_GATTS_REG_EVT:{
-            esp_err_t set_dev_name_ret = esp_ble_gap_set_device_name(SAMPLE_DEVICE_NAME);
+            esp_err_t set_dev_name_ret = esp_ble_gap_set_device_name(BT_DEVICE_NAME);
             if (set_dev_name_ret){
                 ESP_LOGE(GATTS_TABLE_TAG, "set device name failed, error code = %x", set_dev_name_ret);
             }
-    #ifdef CONFIG_SET_RAW_ADV_DATA
-            esp_err_t raw_adv_ret = esp_ble_gap_config_adv_data_raw(raw_adv_data, sizeof(raw_adv_data));
-            if (raw_adv_ret){
-                ESP_LOGE(GATTS_TABLE_TAG, "config raw adv data failed, error code = %x ", raw_adv_ret);
-            }
-            adv_config_done |= ADV_CONFIG_FLAG;
-            esp_err_t raw_scan_ret = esp_ble_gap_config_scan_rsp_data_raw(raw_scan_rsp_data, sizeof(raw_scan_rsp_data));
-            if (raw_scan_ret){
-                ESP_LOGE(GATTS_TABLE_TAG, "config raw scan rsp data failed, error code = %x", raw_scan_ret);
-            }
-            adv_config_done |= SCAN_RSP_CONFIG_FLAG;
-    #else
             //config adv data
             esp_err_t ret = esp_ble_gap_config_adv_data(&adv_data);
             if (ret){
@@ -386,7 +441,6 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 ESP_LOGE(GATTS_TABLE_TAG, "config scan response data failed, error code = %x", ret);
             }
             adv_config_done |= SCAN_RSP_CONFIG_FLAG;
-    #endif
             esp_err_t create_attr_ret = esp_ble_gatts_create_attr_tab(gatt_db, gatts_if, HRS_IDX_NB, SVC_INST_ID);
             if (create_attr_ret){
                 ESP_LOGE(GATTS_TABLE_TAG, "create attr table failed, error code = %x", create_attr_ret);
@@ -399,9 +453,9 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                     esp_gatt_rsp_t rsp;
                     memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
                     rsp.attr_value.handle = param->read.handle;
-                    rsp.attr_value.len = 10;
+                    rsp.attr_value.len = sizeof(equalizer_gains);
 
-                    memcpy(rsp.attr_value.value, equalizer_gains, 10);
+                    memcpy(rsp.attr_value.value, equalizer_gains, sizeof(equalizer_gains));
                     esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
                             ESP_GATT_OK, &rsp);
             } else if (gatt_handle_table[IDX_CHAR_INPUT_GAINS_VAL] == param->read.handle) {
@@ -430,16 +484,26 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 // the data length of gattc write  must be less than GATTS_DEMO_CHAR_VAL_LEN_MAX.
                 ESP_LOGI(GATTS_TABLE_TAG, "GATT_WRITE_EVT, handle = %d, value len = %d, value :", param->write.handle, param->write.len);
                 esp_log_buffer_hex(GATTS_TABLE_TAG, param->write.value, param->write.len);
-
                 // -----------------------------------------------
                 // NOTE: ADD CODE FOR CHECKING VALIDITY OF DATA!!!
                 // TODO: refactor
 
                 if (gatt_handle_table[IDX_CHAR_EQ_GAINS_VAL] == param->write.handle) {
-                    bool data_valid = param->write.len == 10;
+                    bool data_valid = param->write.len == sizeof(equalizer_gains);
+
+                    for (int i = 0; i < sizeof(equalizer_gains); i++) {
+                        if ((int8_t)param->write.value[i] < MIN_EQ_GAIN || (int8_t)param->write.value[i] > MAX_EQ_GAIN) {
+                            data_valid = false;
+                        }
+                    }
 
                     if (data_valid) {
                         memcpy(equalizer_gains, param->write.value, param->write.len);
+
+                        // TODO: fix?
+                        for (int i = 0; i < sizeof(equalizer_gains); i++) {
+                            equalizer_set_gain_info(equalizer, i, (int)((int8_t)param->write.value[i]), true);
+                        }
                     }
 
                     /* send response when param->write.need_rsp is true*/
@@ -478,42 +542,6 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                             esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_INVALID_CFG, NULL);
                     }
                 }
-
-                // -----------------------------------------------
-
-
-                
-                // if (gatt_handle_table[IDX_CHAR_CFG_A] == param->write.handle && param->write.len == 2){
-                //     uint16_t descr_value = param->write.value[1]<<8 | param->write.value[0];
-                //     if (descr_value == 0x0001){
-                //         ESP_LOGI(GATTS_TABLE_TAG, "notify enable");
-                //         uint8_t notify_data[15];
-                //         for (int i = 0; i < sizeof(notify_data); ++i)
-                //         {
-                //             notify_data[i] = i % 0xff;
-                //         }
-                //         //the size of notify_data[] need less than MTU size
-                //         esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, gatt_handle_table[IDX_CHAR_VAL_A],
-                //                                 sizeof(notify_data), notify_data, false);
-                //     }else if (descr_value == 0x0002){
-                //         ESP_LOGI(GATTS_TABLE_TAG, "indicate enable");
-                //         uint8_t indicate_data[15];
-                //         for (int i = 0; i < sizeof(indicate_data); ++i)
-                //         {
-                //             indicate_data[i] = i % 0xff;
-                //         }
-                //         //the size of indicate_data[] need less than MTU size
-                //         esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, gatt_handle_table[IDX_CHAR_VAL_A],
-                //                             sizeof(indicate_data), indicate_data, true);
-                //     }
-                //     else if (descr_value == 0x0000){
-                //         ESP_LOGI(GATTS_TABLE_TAG, "notify/indicate disable ");
-                //     }else{
-                //         ESP_LOGE(GATTS_TABLE_TAG, "unknown descr value");
-                //         esp_log_buffer_hex(GATTS_TABLE_TAG, param->write.value, param->write.len);
-                //     }
-
-                // }
             }else{
                 /* handle prepare write */
                 example_prepare_write_event_env(gatts_if, &prepare_write_env, param);
@@ -605,64 +633,82 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
         }
     } while (0);
 }
-// ----------------------------------------------
+// ----------------------------------------------------------
 
-static const char *TAG = "BLUETOOTH_EXAMPLE";
 
-// extern "C" {
-//     void app_main(void);
-// }
+
+static void ble_gatts_init(void)
+{
+    esp_err_t ret = esp_ble_gatts_register_callback(gatts_event_handler);
+    if (ret){
+        ESP_LOGE(BT_BLE_COEX_TAG, "gatts register error, error code = 0x%x", ret);
+        return;
+    }
+    ret = esp_ble_gap_register_callback(gap_event_handler);
+    if (ret){
+        ESP_LOGE(BT_BLE_COEX_TAG, "gap register error, error code = 0x%x", ret);
+        return;
+    }
+    ret = esp_ble_gatts_app_register(ESP_APP_ID);
+    if (ret){
+        ESP_LOGE(BT_BLE_COEX_TAG, "gatts app register error, error code = 0x%x", ret);
+        return;
+    }
+    esp_err_t local_mtu_ret = esp_ble_gatt_set_local_mtu(500);
+    if (local_mtu_ret){
+        ESP_LOGE(BT_BLE_COEX_TAG, "set local  MTU failed, error code = 0x%x", local_mtu_ret);
+    }
+}
 
 void app_main(void)
 {
-    audio_pipeline_handle_t pipeline;
-    audio_element_handle_t bt_stream_reader, i2s_stream_writer;
-
+    /* Initialize NVS — it is used to store PHY calibration data */
     esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
-        // NVS partition was truncated and needs to be erased
-        // Retry nvs_flash_init
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
     }
+    ESP_ERROR_CHECK(err);
 
-    esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set(TAG, ESP_LOG_DEBUG);
+    uart_config_t uart_config = {
+    .baud_rate = UART_MONITOR_BAUDRATE,
+    .data_bits = UART_DATA_8_BITS,
+    .parity    = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+};
+    uart_param_config(UART_NUM_0, &uart_config);
 
-    ESP_LOGI(TAG, "[ 1 ] Create Bluetooth service");
-    bluetooth_service_cfg_t bt_cfg = {
-        .device_name = "ESP-ADF-SPEAKER",
-        .mode = BLUETOOTH_A2DP_SINK,
-    };
-    bluetooth_service_start(&bt_cfg);
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    if ((err = esp_bt_controller_init(&bt_cfg)) != ESP_OK) {
+        ESP_LOGE(BT_BLE_COEX_TAG, "%s initialize controller failed: %s\n", __func__, esp_err_to_name(err));
+        return;
+    }
 
-    // SETUP BLE GATT SERVER (crashes ESP32.... why..... TODO:fix)
-    // --------------------------------
-    // ESP_LOGI(TAG, "[ 1.1 ] Start bluetooth gatt server");
-    // esp_err_t ret;
-    // ret = esp_ble_gatts_register_callback(gatts_event_handler);
-    // if (ret){
-    //     ESP_LOGE(GATTS_TABLE_TAG, "gatts register error, error code = %x", ret);
-    //     return;
-    // }
+    if ((err = esp_bt_controller_enable(ESP_BT_MODE_BTDM)) != ESP_OK) {
+        ESP_LOGE(BT_BLE_COEX_TAG, "%s enable controller failed: %s\n", __func__, esp_err_to_name(err));
+        return;
+    }
 
-    // ret = esp_ble_gap_register_callback(gap_event_handler);
-    // if (ret){
-    //     ESP_LOGE(GATTS_TABLE_TAG, "gap register error, error code = %x", ret);
-    //     return;
-    // }
+    if ((err = esp_bluedroid_init()) != ESP_OK) {
+        ESP_LOGE(BT_BLE_COEX_TAG, "%s initialize bluedroid failed: %s\n", __func__, esp_err_to_name(err));
+        return;
+    }
 
-    // ret = esp_ble_gatts_app_register(ESP_APP_ID);
-    // if (ret){
-    //     ESP_LOGE(GATTS_TABLE_TAG, "gatts app register error, error code = %x", ret);
-    //     return;
-    // }
+    if ((err = esp_bluedroid_enable()) != ESP_OK) {
+        ESP_LOGE(BT_BLE_COEX_TAG, "%s enable bluedroid failed: %s\n", __func__, esp_err_to_name(err));
+        return;
+    }
 
-    // esp_err_t local_mtu_ret = esp_ble_gatt_set_local_mtu(500);
-    // if (local_mtu_ret){
-    //     ESP_LOGE(GATTS_TABLE_TAG, "set local  MTU failed, error code = %x", local_mtu_ret);
-    // }
-    // --------------------------------
+    /* set up bt device name */
+    esp_bt_dev_set_device_name(BT_DEVICE_NAME);
+
+    /* set discoverable and connectable mode, wait to be connected */
+    esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
+
+    // --
+    audio_pipeline_handle_t pipeline;
+    audio_element_handle_t bt_stream_reader, i2s_stream_writer;
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
@@ -672,62 +718,75 @@ void app_main(void)
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     pipeline = audio_pipeline_init(&pipeline_cfg);
 
-    ESP_LOGI(TAG, "[3.1] Create i2s stream to write data to codec chip");
+    ESP_LOGI(TAG, "[4] Create i2s stream to write data to codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
 
-    ESP_LOGI(TAG, "[3.2] Get Bluetooth stream");
-    bt_stream_reader = bluetooth_service_create_stream();
+    equalizer_cfg_t eq_cfg = DEFAULT_EQUALIZER_CONFIG();
 
-    ESP_LOGI(TAG, "[3.2] Register all elements to audio pipeline");
+    int set_gain[20];
+    for (unsigned int i = 0; i < 10; i++) {
+        set_gain[i * 2] = (int)((int8_t)equalizer_gains[i]);
+        set_gain[i * 2 + 1] = (int)((int8_t)equalizer_gains[i]);
+    }
+    eq_cfg.set_gain =
+        set_gain; // The size of gain array should be the multiplication of NUMBER_BAND and number channels of audio stream data. The minimum of gain is -13 dB.
+    equalizer = equalizer_init(&eq_cfg);
+
+    ESP_LOGI(TAG, "[4.1] Get Bluetooth stream");
+    a2dp_stream_config_t a2dp_config = {
+        .type = AUDIO_STREAM_READER,
+        .user_callback = {0},
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+        .audio_hal = board_handle->audio_hal,
+#endif
+    };
+    bt_stream_reader = a2dp_stream_init(&a2dp_config);
+
+    ESP_LOGI(TAG, "[4.2] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, bt_stream_reader, "bt");
+    audio_pipeline_register(pipeline, equalizer, "equalizer");
     audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
 
-    ESP_LOGI(TAG, "[3.3] Link it together [Bluetooth]-->bt_stream_reader-->i2s_stream_writer-->[codec_chip]");
-
-#if (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
-    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
-    rsp_cfg.src_rate = 44100;
-    rsp_cfg.src_ch = 2;
-    rsp_cfg.dest_rate = 48000;
-    rsp_cfg.dest_ch = 2;
-    audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
-    audio_pipeline_register(pipeline, filter, "filter");
-    i2s_stream_set_clk(i2s_stream_writer, 48000, 16, 2);
-    const char *link_tag[3] = {"bt", "filter", "i2s"};
+    ESP_LOGI(TAG, "[4.3] Link it together [Bluetooth]-->bt_stream_reader-->i2s_stream_writer-->[codec_chip]");
+    const char *link_tag[3] = {"bt", "equalizer", "i2s"};
     audio_pipeline_link(pipeline, &link_tag[0], 3);
-#else
-    const char *link_tag[2] = {"bt", "i2s"};
-    audio_pipeline_link(pipeline, &link_tag[0], 2);
-#endif
-    ESP_LOGI(TAG, "[ 4 ] Initialize peripherals");
+
+    ESP_LOGI(TAG, "[ 5 ] Initialize peripherals");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
-
-    ESP_LOGI(TAG, "[4.1] Initialize Touch peripheral");
     audio_board_key_init(set);
 
-    ESP_LOGI(TAG, "[4.2] Create Bluetooth peripheral");
-    esp_periph_handle_t bt_periph = bluetooth_service_create_periph();
+    ESP_LOGI(TAG, "[ 5.1 ] Create and start input key service");
+    input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
+    input_key_service_cfg_t input_cfg = INPUT_KEY_SERVICE_DEFAULT_CONFIG();
+    input_cfg.handle = set;
+    periph_service_handle_t input_ser = input_key_service_create(&input_cfg);
+    input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
+    periph_service_set_callback(input_ser, input_key_service_cb, NULL);
 
-    ESP_LOGI(TAG, "[4.2] Start all peripherals");
+    ESP_LOGI(TAG, "[5.2] Create Bluetooth peripheral");
+    bt_periph = bt_create_periph();
+
+    ESP_LOGI(TAG, "[5.3] Start all peripherals");
     esp_periph_start(set, bt_periph);
 
-    ESP_LOGI(TAG, "[ 5 ] Set up  event listener");
+    ESP_LOGI(TAG, "[ 6 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 
-    ESP_LOGI(TAG, "[5.1] Listening event from all elements of pipeline");
+    ESP_LOGI(TAG, "[6.1] Listening event from all elements of pipeline");
     audio_pipeline_set_listener(pipeline, evt);
 
-    ESP_LOGI(TAG, "[5.2] Listening event from peripherals");
-    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
-
-    ESP_LOGI(TAG, "[ 6 ] Start audio_pipeline");
+    ESP_LOGI(TAG, "[ 7 ] Start audio_pipeline");
     audio_pipeline_run(pipeline);
+    // --
 
-    ESP_LOGI(TAG, "[ 7 ] Listen for all pipeline events");
+    //gatt server init
+    ble_gatts_init();
+
+    ESP_LOGI(TAG, "[ 8 ] Listen for all pipeline events");
     while (1) {
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
@@ -752,32 +811,6 @@ void app_main(void)
             continue;
         }
 
-        if ((msg.source_type == PERIPH_ID_TOUCH || msg.source_type == PERIPH_ID_BUTTON || msg.source_type == PERIPH_ID_ADC_BTN)
-            && (msg.cmd == PERIPH_TOUCH_TAP || msg.cmd == PERIPH_BUTTON_PRESSED || msg.cmd == PERIPH_ADC_BUTTON_PRESSED)) {
-
-            if ((int) msg.data == get_input_play_id()) {
-                ESP_LOGI(TAG, "[ * ] [Play] touch tap event");
-                periph_bluetooth_play(bt_periph);
-            } else if ((int) msg.data == get_input_set_id()) {
-                ESP_LOGI(TAG, "[ * ] [Set] touch tap event");
-                periph_bluetooth_pause(bt_periph);
-            } else if ((int) msg.data == get_input_volup_id()) {
-                ESP_LOGI(TAG, "[ * ] [Vol+] touch tap event");
-                periph_bluetooth_next(bt_periph);
-            } else if ((int) msg.data == get_input_voldown_id()) {
-                ESP_LOGI(TAG, "[ * ] [Vol-] touch tap event");
-                periph_bluetooth_prev(bt_periph);
-            }
-        }
-
-        /* Stop when the Bluetooth is disconnected or suspended */
-        if (msg.source_type == PERIPH_ID_BLUETOOTH
-            && msg.source == (void *)bt_periph) {
-            if (msg.cmd == PERIPH_BLUETOOTH_DISCONNECTED) {
-                ESP_LOGW(TAG, "[ * ] Bluetooth disconnected");
-                break;
-            }
-        }
         /* Stop when the last pipeline element (i2s_stream_writer in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
             && msg.cmd == AEL_MSG_CMD_REPORT_STATUS
@@ -786,34 +819,4 @@ void app_main(void)
             break;
         }
     }
-
-    ESP_LOGI(TAG, "[ 8 ] Stop audio_pipeline");
-    audio_pipeline_stop(pipeline);
-    audio_pipeline_wait_for_stop(pipeline);
-    audio_pipeline_terminate(pipeline);
-
-    audio_pipeline_unregister(pipeline, bt_stream_reader);
-    audio_pipeline_unregister(pipeline, i2s_stream_writer);
-
-    /* Terminate the pipeline before removing the listener */
-    audio_pipeline_remove_listener(pipeline);
-
-    /* Stop all peripherals before removing the listener */
-    esp_periph_set_stop_all(set);
-    audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt);
-
-    /* Make sure audio_pipeline_remove_listener & audio_event_iface_remove_listener are called before destroying event_iface */
-    audio_event_iface_destroy(evt);
-
-    /* Release all resources */
-
-#if (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
-    audio_pipeline_unregister(pipeline, filter);
-    audio_element_deinit(filter);
-#endif
-    audio_pipeline_deinit(pipeline);
-    audio_element_deinit(bt_stream_reader);
-    audio_element_deinit(i2s_stream_writer);
-    esp_periph_set_destroy(set);
-    bluetooth_service_destroy();
 }
