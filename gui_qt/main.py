@@ -14,29 +14,38 @@ from bluetoothManager import BluetoothManager
 from qasync import QEventLoop
 
 class MainWindow(Qw.QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, app, loop, parent=None):
         super().__init__(parent)
+
+        self.loop = loop
+        self.bt_man = BluetoothManager()
         
         desktop_size = Qg.QGuiApplication.primaryScreen().availableGeometry().size()
         self.resize(desktop_size.width() * 0.4, desktop_size.height() * 0.5)
         
         # if len(ports) != 0: self.ser_man.set_port(ports[0])
         
-        self.setWindowTitle('BS Equalizer')
+        self.setWindowTitle('Audiyour Control')
         
         self.main_ui = MainUI(parent=self)
         # Set the central widget of the Window.
         self.setCentralWidget(self.main_ui)
         
         self.show()
-        
+
+    def closeEvent(self, event):
+        # do stuff
+        asyncio.ensure_future(self.bt_man.disconnect())
+        event.accept() # let the window close
+
+
 class MainUI(Qw.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
         # self.manager = gatt.DeviceManager(adapter_name='hci0')
 
-        self.bt_man = BluetoothManager(mac_address='7c:87:ce:cc:f0:12')
+        self.bt_man = self.parent().bt_man
         # self.device.connect()
 
         # self.manager.run()
@@ -141,17 +150,21 @@ def main():
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     
     app = Qw.QApplication(sys.argv)  # Create application
-
     loop = QEventLoop(app)
-    asyncio.set_event_loop(loop)  # NEW must set the event loop
+    asyncio.set_event_loop(loop) # Allows for spawing async threads from QT code
 
     app.setPalette(app.style().standardPalette())
-    window = MainWindow()  # Create main window
-
-    with loop:
-        loop.run_forever()
+    window = MainWindow(app, loop)  # Create main window
     
-    sys.exit(app.exec_())
+    # https://xinhuang.github.io/posts/2017-07-31-common-mistakes-using-python3-asyncio.html
+    try:
+        loop.run_forever()
+        tasks = asyncio.all_tasks()
+        for t in [t for t in tasks if not (t.done() or t.cancelled())]:
+            # give canceled tasks the last chance to run
+            loop.run_until_complete(t)
+    finally:
+        loop.close()
 
 if __name__ == '__main__':
     main()

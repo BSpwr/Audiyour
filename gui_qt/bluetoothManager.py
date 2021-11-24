@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 
 class BluetoothManager:
-    def __init__(self, mac_address):
+    def __init__(self):
         
         self.AUDIYOUR_CONFIG_SERVICE = '000000ff-0000-1000-8000-00805f9b34fb'
         self.EQUALIZER_GAINS_CHARACTERISTIC = '0000ff01-0000-1000-8000-00805f9b34fb'

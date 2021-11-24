@@ -53,6 +53,7 @@ class Equalizer(Qw.QWidget):
         for idx, band_w in enumerate(self.band_widgets):
             band_w.slider.blockSignals(True)
             band_w.slider.setValue(int(gains[idx]))
+            band_w.update_db_value(int(gains[idx]))
             band_w.slider.blockSignals(False)
         # self.set_enable_btn.setChecked(status)
     
@@ -68,6 +69,7 @@ class Equalizer(Qw.QWidget):
         for band_w in self.band_widgets:
             band_w.slider.blockSignals(True)
             band_w.slider.setValue(0)
+            band_w.update_db_value(0)
             band_w.slider.blockSignals(False)
 
         asyncio.ensure_future(self.parent().parent().bt_man.write_gains([0 for i in range(0, 10)]))
@@ -95,7 +97,7 @@ class EqualizerBand(Qw.QWidget):
             Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Expanding)
         self.slider.valueChanged.connect(lambda val: self.update_db_value(val))
         
-        self.db_value_label = Qw.QLabel("0.0 dB")
+        self.db_value_label = Qw.QLabel("0 dB")
         self.db_value_label.setFixedWidth(60)
         self.db_value_label.setAlignment(Qc.Qt.AlignVCenter)
         self.db_value_label.setSizePolicy(
