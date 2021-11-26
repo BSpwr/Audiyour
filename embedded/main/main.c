@@ -45,8 +45,7 @@
 #include "a2dp_stream.h"
 #include "driver/uart.h"
 
-#include "downmix.h"
-// #include "mixer.h"
+#include "mixer.h"
 #include "raw_stream.h"
 #include "equalizer.h"
 #include "es8388.h"
@@ -71,13 +70,13 @@
 #define EQUALIZER_RINGBUFFER_SIZE   (8 * 1024)
 // ------
 
-// ------ DOWNMIX TASK freeRTOS
+// ------ MIXER TASK freeRTOS
 #define MIXER_TASK_STACK (8 * 1024)
 #define MIXER_TASK_CORE (0)
 #define MIXER_TASK_PRIO (5)
 #define MIXER_RINGBUFFER_SIZE (8 * 1024)
 #define MIXER_BUF_SIZE (256)
-// ------ DOWNMIX TASK freeRTOS
+// ------ MIXER TASK freeRTOS
 
 static const char *TAG = "BLUETOOTH_EXAMPLE";
 static esp_periph_handle_t bt_periph = NULL;
@@ -816,9 +815,9 @@ void app_main(void)
 #define MUSIC_GAIN_DB 0
 #define PLAY_STATUS ESP_DOWNMIX_OUTPUT_TYPE_TWO_CHANNEL
 #define NUMBER_SOURCE_FILE 2
-    downmix_cfg_t downmix_cfg = DEFAULT_DOWNMIX_CONFIG();
-    downmix_cfg.downmix_info.source_num = 2;
-    audio_element_handle_t downmixer = downmix_init(&downmix_cfg);
+    downmix_cfg_t mixer_cfg = DEFAULT_MIXER_CONFIG();
+    mixer_cfg.downmix_info.source_num = 2;
+    audio_element_handle_t mixer = mixer_init(&mixer_cfg);
 
     esp_downmix_input_info_t source_information[NUMBER_SOURCE_FILE] = {0};
     esp_downmix_input_info_t source_info_base = {
@@ -838,21 +837,21 @@ void app_main(void)
         .transit_time = TRANSMITTIME,
     };
     source_information[1] = source_info_newcome;
-    source_info_init(downmixer, source_information);
+    source_info_init(mixer, source_information);
 
     ringbuf_handle_t rb_jack_stream_raw = audio_element_get_input_ringbuf(jack_stream_raw);
-    downmix_set_input_rb(downmixer, rb_jack_stream_raw, 1);
+    mixer_set_input_rb(mixer, rb_jack_stream_raw, 1);
 
     ringbuf_handle_t rb_bt_stream_raw = audio_element_get_input_ringbuf(bt_stream_raw);
-    downmix_set_input_rb(downmixer, rb_bt_stream_raw, 0);
+    mixer_set_input_rb(mixer, rb_bt_stream_raw, 0);
 
     ESP_LOGI(TAG, "[4.2] Register all elements to audio pipeline");
-    audio_pipeline_register(pipeline, downmixer, "downmixer");
+    audio_pipeline_register(pipeline, mixer, "mixer");
     audio_pipeline_register(pipeline, equalizer, "equalizer");
     audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
 
     ESP_LOGI(TAG, "[4.3] Link it together [Bluetooth]-->bt_stream_reader-->i2s_stream_writer-->[codec_chip]");
-    const char *link_tag[3] = {"downmixer", "equalizer", "i2s"};
+    const char *link_tag[3] = {"mixer", "equalizer", "i2s"};
     audio_pipeline_link(pipeline, &link_tag[0], 3);
 
     ESP_LOGI(TAG, "[ 5 ] Initialize peripherals");
@@ -883,11 +882,10 @@ void app_main(void)
     audio_pipeline_set_listener(pipeline_bt_read, evt);
     audio_pipeline_set_listener(pipeline, evt);
     audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
-    downmix_set_output_type(downmixer, PLAY_STATUS);
-    // downmix_set_source_stream_info(downmixer, SAMPLERATE, NUM_INPUT_CHANNEL, 0);
-    downmix_set_input_rb_timeout(downmixer, 50, INDEX_BASE_STREAM);
-    downmix_set_input_rb_timeout(downmixer, 50, INDEX_NEWCOME_STREAM);
-    downmix_set_work_mode(downmixer, ESP_DOWNMIX_WORK_MODE_SWITCH_ON);
+    mixer_set_output_type(mixer, PLAY_STATUS);
+    mixer_set_input_rb_timeout(mixer, 50, INDEX_BASE_STREAM);
+    mixer_set_input_rb_timeout(mixer, 50, INDEX_NEWCOME_STREAM);
+    mixer_set_work_mode(mixer, ESP_DOWNMIX_WORK_MODE_SWITCH_ON);
 
     ESP_LOGI(TAG, "[ 7 ] Start audio_pipeline");
     audio_pipeline_run(pipeline_jack_read);
@@ -922,13 +920,6 @@ void app_main(void)
 #endif
             continue;
         }
-
-        // if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
-        // if (msg.cmd == AEL_MSG_CMD_REPORT_STATUS) {
-            ESP_LOGW(TAG, "EVENT: %d -- CMD: %d", (int)msg.data, msg.cmd);
-            break;
-        // }
-        // }
 
         /* Stop when the last pipeline element (i2s_stream_writer in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
