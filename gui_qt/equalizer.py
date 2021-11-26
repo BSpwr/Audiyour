@@ -88,7 +88,7 @@ class EqualizerBand(Qw.QWidget):
         
         self.slider = JumpSlider(Qc.Qt.Vertical, parent=self)
         self.slider.setMinimum(-20)
-        self.slider.setMaximum(12)
+        self.slider.setMaximum(10)
         self.slider.setSingleStep(1)
         self.slider.setPageStep(1)
         self.slider.setTickInterval(1)

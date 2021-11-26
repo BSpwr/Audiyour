@@ -1,2 +1,4 @@
 /embedded/build
 **/.vscode
+**/__pycache__/
+**/venv/
