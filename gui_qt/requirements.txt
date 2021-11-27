@@ -1,6 +1,5 @@
-future==0.18.2
-iso8601==0.1.13
-pyserial==3.5
+bleak==0.13.0
+dbus-next==0.2.3
 PySide2==5.15.2
-PyYAML==5.4.1
+qasync==0.22.0
 shiboken2==5.15.2

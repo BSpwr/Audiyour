@@ -1,7 +1,4 @@
-# Graphic Equalizer GUI
-
-## Note: This was developed in Linux
-## It should work in Windows, but this was not tested
+# Audiyour QT GUI
 
 ## Prerequisites
 - You must have Q5 Framework (GUI Toolkit) installed.
@@ -13,11 +10,11 @@
         - https://www.qt.io/download-thank-you?os=windows
 
 
-## Install through PyPi
+## Install
 - Optionally, create a fresh venv for installing dependencies into
     - Linux
         - `python3 -m venv venv`
-        - `source venv_eq/bin/activate`
+        - `source venv/bin/activate`
     - Windows
         - `python3 -m venv venv`
         - `venv/Scripts/Activate.ps1`

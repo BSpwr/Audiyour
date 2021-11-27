@@ -4,12 +4,6 @@ from bleak import BleakClient, BleakScanner
 import bleak
 from datetime import datetime, timedelta
 
-# address = "7C:87:CE:CC:F0:12"
-
-
-
-
-
 class BluetoothManager:
     def __init__(self):
         
@@ -89,8 +83,6 @@ class BluetoothManager:
         print(new_gains_bytes)
 
         await self.client.write_gatt_char(self.EQUALIZER_GAINS_CHARACTERISTIC, new_gains_bytes)
-        # self.eq_gails_characteristic.write_value(new_gains_bytes)
-
 
     async def write_gain_index(self, index, new_gain):
         self.eq_gains_local[index] = new_gain
@@ -103,10 +95,3 @@ class BluetoothManager:
                 return    
 
         await self.write_gains(self.eq_gains_local)
-
-# async def main(address):
-#     async with BleakClient(address) as client:
-#         model_number = await client.read_gatt_char(EQUALIZER_GAINS_CHARACTERISTIC)
-#         print("Model Number", model_number)
-
-# asyncio.run(main(address))
