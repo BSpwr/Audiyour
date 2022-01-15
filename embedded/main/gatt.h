@@ -37,13 +37,8 @@ typedef struct {
     int                     prepare_len;
 } prepare_type_env_t;
 
-#define BT_BLE_COEX_TAG     "BT_BLE_COEX"
+#define GATT_TAG     "GATT_SERVER"
 #define BT_DEVICE_NAME      "Audiyour"
-
-static int8_t equalizer_gains[10]    = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-// {bluetooth_input_gain, line_in_input_gain}
-static int8_t source_gains[2]        = {0x0, 0x0};
-static int8_t output_gain         = 0x0;
 
 void gatts_profile_event_handler(esp_gatts_cb_event_t event,
 					esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
@@ -59,6 +54,8 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
 void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 
 void ble_gatts_init(void);
+
+void ble_gatts_deinit(void);
 
 #ifdef __cplusplus
 }
