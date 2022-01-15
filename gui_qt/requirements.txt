@@ -4,3 +4,6 @@ pyserial==3.5
 PySide2==5.13.2
 PyYAML==5.4.1
 shiboken2==5.13.2
+bleak==0.13.0
+dbus-next==0.2.3
+qasync==0.22.0

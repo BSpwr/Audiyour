@@ -4,12 +4,9 @@ from PySide2 import QtGui as Qg
 
 from equalizer import Equalizer
 
-import struct
-import timeit
 import sys
 import asyncio
 import signal
-import gatt
 from bluetoothManager import BluetoothManager
 from qasync import QEventLoop
 
