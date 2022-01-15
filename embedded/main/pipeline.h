@@ -14,7 +14,7 @@ extern "C" {
 #define A2DP_STREAM_TASK_CORE       (0)
 #define A2DP_STREAM_TASK_PRIO       (22)
 #define A2DP_STREAM_TASK_IN_EXT     (true)
-#define A2DP_STREAM_QUEUE_SIZE      (2048)
+#define A2DP_STREAM_QUEUE_SIZE      (4096)
 // ------
 
 // ------ EQUALIZER TASK freeRTOS
@@ -33,11 +33,12 @@ extern "C" {
 // ------ MIXER TASK freeRTOS
 
 typedef struct audiyour_pipeline_a2dp {
+    audio_board_handle_t board_handle;
     audio_pipeline_handle_t pipeline;
     audio_pipeline_handle_t pipeline_bt_read;
     audio_pipeline_handle_t pipeline_jack_read;
-    audio_element_handle_t bt_stream_reader, i2s_stream_writer;
-    audio_board_handle_t board_handle;
+    audio_element_handle_t bt_stream_reader;
+    audio_element_handle_t i2s_stream_writer;
     audio_element_handle_t i2s_stream_reader;
     audio_element_handle_t bt_stream_raw;
     audio_element_handle_t jack_stream_raw;
