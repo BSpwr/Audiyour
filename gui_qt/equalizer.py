@@ -109,9 +109,9 @@ class EqualizerBand(Qw.QWidget):
             Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
 
         self.layout = Qw.QVBoxLayout()
-        self.layout.addWidget(self.db_value_label, Qc.Qt.AlignVCenter)
-        self.layout.addWidget(self.slider, Qc.Qt.AlignVCenter)
-        self.layout.addWidget(self.freq_text_box, Qc.Qt.AlignVCenter)
+        self.layout.addWidget(self.db_value_label)
+        self.layout.addWidget(self.slider)
+        self.layout.addWidget(self.freq_text_box)
         self.layout.setAlignment(Qc.Qt.AlignVCenter)
         self.setLayout(self.layout)
         self.show()
