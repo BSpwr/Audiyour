@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_xlider/flutter_xlider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -50,30 +49,28 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final double _lowerValue = -30.0;
-  final double _upperValue = 30.0;
-  int? _divs = 40;
   List<double> gain = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
   List<int> freq = [31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(widget.title)
       ),
       body: RotatedBox(
         quarterTurns: 3,
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             //First
             Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               textBaseline: TextBaseline.alphabetic,
               children: <Widget>[
                 Text(
                   freq[0].toString(),
-                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                  style: const TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
                 ),
                 RotatedBox(
                     quarterTurns: 3,
@@ -93,15 +90,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
                 Text(
                   gain[0].toString(),
-                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                  style: const TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
                 ),
-                Text("  dB")
+                Text("dB")
               ],
             ),
 
             Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               textBaseline: TextBaseline.alphabetic,
               children: <Widget>[
                 Text(
@@ -128,13 +125,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   gain[1].toString(),
                   style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
                 ),
-                Text("  dB")
+                Text("dB")
               ],
             ),
 
             Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               textBaseline: TextBaseline.alphabetic,
               children: <Widget>[
                 Text(
@@ -161,13 +158,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   gain[2].toString(),
                   style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
                 ),
-                Text("  dB")
+                Text("dB")
               ],
             ),
 
             Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               textBaseline: TextBaseline.alphabetic,
               children: <Widget>[
                 Text(
@@ -194,13 +191,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   gain[3].toString(),
                   style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
                 ),
-                Text("  dB")
+                Text("dB")
               ],
             ),
 
             Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               textBaseline: TextBaseline.alphabetic,
               children: <Widget>[
                 Text(
@@ -227,13 +224,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   gain[4].toString(),
                   style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
                 ),
-                Text("  dB")
+                Text("dB")
               ],
             ),
 
             Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               textBaseline: TextBaseline.alphabetic,
               children: <Widget>[
                 Text(
@@ -260,13 +257,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   gain[5].toString(),
                   style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
                 ),
-                Text("  dB")
+                Text("dB")
               ],
             ),
 
             Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               textBaseline: TextBaseline.alphabetic,
               children: <Widget>[
                 Text(
@@ -293,14 +290,14 @@ class _MyHomePageState extends State<MyHomePage> {
                   gain[6].toString(),
                   style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
                 ),
-                Text("  dB")
+                Text("dB")
               ],
             ),
 
 
             Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               textBaseline: TextBaseline.alphabetic,
               children: <Widget>[
                 Text(
@@ -327,13 +324,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   gain[7].toString(),
                   style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
                 ),
-                Text("  dB")
+                Text("dB")
               ],
             ),
 
             Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               textBaseline: TextBaseline.alphabetic,
               children: <Widget>[
                 Text(
@@ -360,13 +357,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   gain[8].toString(),
                   style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
                 ),
-                Text("  dB")
+                Text("dB")
               ],
             ),
 
             Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               textBaseline: TextBaseline.alphabetic,
               children: <Widget>[
                 Text(
@@ -393,7 +390,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   gain[9].toString(),
                   style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
                 ),
-                Text("  dB")
+                Text("dB")
               ],
             )
           ],
