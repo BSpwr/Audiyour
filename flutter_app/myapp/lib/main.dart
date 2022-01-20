@@ -54,47 +54,351 @@ class _MyHomePageState extends State<MyHomePage> {
   final double _upperValue = 30.0;
   int? _divs = 40;
   List<double> gain = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
+  List<int> freq = [31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Column(
-        children: <Widget>[
-          //First
-          Container(
-            margin: EdgeInsets.fromLTRB(0,0,360,0),
-            alignment: Alignment.center,
-            child: RotatedBox(
-              quarterTurns: 3,
-              child: Slider(
-              value: gain[0],
-              max: 20,
-              min: -20,
-              divisions: 40,
-              onChanged: (double value) {
-                setState(() {
-                  gain[0] = value;
-                });
-              },
-              )
+      body: RotatedBox(
+        quarterTurns: 3,
+        child: Row(
+          children: <Widget>[
+            //First
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Text(
+                  freq[0].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                RotatedBox(
+                    quarterTurns: 3,
+                    child: Slider(
+                      value: gain[0],
+                      max: 20,
+                      min: -20,
+                      divisions: 40,
+                      onChanged: (double value) {
+                        setState(() {
+                          gain[0] = value;
+                        });
+                      },
+                    )
+                ),
+
+
+                Text(
+                  gain[0].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                Text("  dB")
+              ],
             ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: <Widget>[
-              Text(
-                gain[0].toString(),
-                style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
-              ),
-              Text("dB")
-            ],
-          ),
-        ],
-      ),
+
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Text(
+                  freq[1].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                RotatedBox(
+                    quarterTurns: 3,
+                    child: Slider(
+                      value: gain[1],
+                      max: 20,
+                      min: -20,
+                      divisions: 40,
+                      onChanged: (double value) {
+                        setState(() {
+                          gain[1] = value;
+                        });
+                      },
+                    )
+                ),
+
+
+                Text(
+                  gain[1].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                Text("  dB")
+              ],
+            ),
+
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Text(
+                  freq[2].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                RotatedBox(
+                    quarterTurns: 3,
+                    child: Slider(
+                      value: gain[2],
+                      max: 20,
+                      min: -20,
+                      divisions: 40,
+                      onChanged: (double value) {
+                        setState(() {
+                          gain[2] = value;
+                        });
+                      },
+                    )
+                ),
+
+
+                Text(
+                  gain[2].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                Text("  dB")
+              ],
+            ),
+
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Text(
+                  freq[3].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                RotatedBox(
+                    quarterTurns: 3,
+                    child: Slider(
+                      value: gain[3],
+                      max: 20,
+                      min: -20,
+                      divisions: 40,
+                      onChanged: (double value) {
+                        setState(() {
+                          gain[3] = value;
+                        });
+                      },
+                    )
+                ),
+
+
+                Text(
+                  gain[3].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                Text("  dB")
+              ],
+            ),
+
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Text(
+                  freq[4].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                RotatedBox(
+                    quarterTurns: 3,
+                    child: Slider(
+                      value: gain[4],
+                      max: 20,
+                      min: -20,
+                      divisions: 40,
+                      onChanged: (double value) {
+                        setState(() {
+                          gain[4] = value;
+                        });
+                      },
+                    )
+                ),
+
+
+                Text(
+                  gain[4].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                Text("  dB")
+              ],
+            ),
+
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Text(
+                  freq[5].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                RotatedBox(
+                    quarterTurns: 3,
+                    child: Slider(
+                      value: gain[5],
+                      max: 20,
+                      min: -20,
+                      divisions: 40,
+                      onChanged: (double value) {
+                        setState(() {
+                          gain[5] = value;
+                        });
+                      },
+                    )
+                ),
+
+
+                Text(
+                  gain[5].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                Text("  dB")
+              ],
+            ),
+
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Text(
+                  freq[6].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                RotatedBox(
+                    quarterTurns: 3,
+                    child: Slider(
+                      value: gain[6],
+                      max: 20,
+                      min: -20,
+                      divisions: 40,
+                      onChanged: (double value) {
+                        setState(() {
+                          gain[6] = value;
+                        });
+                      },
+                    )
+                ),
+
+
+                Text(
+                  gain[6].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                Text("  dB")
+              ],
+            ),
+
+
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Text(
+                  freq[7].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                RotatedBox(
+                    quarterTurns: 3,
+                    child: Slider(
+                      value: gain[7],
+                      max: 20,
+                      min: -20,
+                      divisions: 40,
+                      onChanged: (double value) {
+                        setState(() {
+                          gain[7] = value;
+                        });
+                      },
+                    )
+                ),
+
+
+                Text(
+                  gain[7].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                Text("  dB")
+              ],
+            ),
+
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Text(
+                  freq[8].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                RotatedBox(
+                    quarterTurns: 3,
+                    child: Slider(
+                      value: gain[8],
+                      max: 20,
+                      min: -20,
+                      divisions: 40,
+                      onChanged: (double value) {
+                        setState(() {
+                          gain[8] = value;
+                        });
+                      },
+                    )
+                ),
+
+
+                Text(
+                  gain[8].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                Text("  dB")
+              ],
+            ),
+
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Text(
+                  freq[9].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                RotatedBox(
+                    quarterTurns: 3,
+                    child: Slider(
+                      value: gain[9],
+                      max: 20,
+                      min: -20,
+                      divisions: 40,
+                      onChanged: (double value) {
+                        setState(() {
+                          gain[9] = value;
+                        });
+                      },
+                    )
+                ),
+
+
+                Text(
+                  gain[9].toString(),
+                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+                ),
+                Text("  dB")
+              ],
+            )
+          ],
+        ),
+      )
     );
   }
 }
