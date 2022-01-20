@@ -11,7 +11,6 @@ class BluetoothManager:
         self.EQUALIZER_GAINS_CHARACTERISTIC = '0000ff01-0000-1000-8000-00805f9b34fb'
 
         self.eq_gains = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.eq_gains_local = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.mac_address = None
 
         self.client = None
@@ -58,7 +57,6 @@ class BluetoothManager:
         value = await self.client.read_gatt_char(self.EQUALIZER_GAINS_CHARACTERISTIC)
         for i in range(0, 10):
             self.eq_gains[i] = int.from_bytes([value[i]], "little", signed=True)
-            self.eq_gains_local[i] = int.from_bytes([value[i]], "little", signed=True)
 
     async def write_gains(self, new_gains):
         await self.connect()
@@ -81,11 +79,12 @@ class BluetoothManager:
             new_gains_bytes = new_gains_bytes + i.to_bytes(1, "little", signed=True)
 
         print(new_gains_bytes)
-
-        await self.client.write_gatt_char(self.EQUALIZER_GAINS_CHARACTERISTIC, new_gains_bytes)
+        
+        k = await self.client.write_gatt_char(self.EQUALIZER_GAINS_CHARACTERISTIC, new_gains_bytes, response=True)
+        # self.eq_gails_characteristic.write_value(new_gains_bytes)
 
     async def write_gain_index(self, index, new_gain):
-        self.eq_gains_local[index] = new_gain
+        self.eq_gains[index] = new_gain
 
         this_call = datetime.now()
 
@@ -94,4 +93,11 @@ class BluetoothManager:
             if time_since_last_call < self._wait:
                 return    
 
-        await self.write_gains(self.eq_gains_local)
+        await self.write_gains(self.eq_gains)
+
+# async def main(address):
+#     async with BleakClient(address) as client:
+#         model_number = await client.read_gatt_char(EQUALIZER_GAINS_CHARACTERISTIC)
+#         print("Model Number", model_number)
+
+# asyncio.run(main(address))

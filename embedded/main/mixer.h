@@ -34,11 +34,11 @@ typedef struct {
 
 #define DEFAULT_MIXER_CONFIG()                                      \
     {                                                                 \
-        .downmix_info = {                                             \
+        .downmix_info = {                    \
+            .source_num = SOURCE_NUM_MAX,                             \
             .out_ctx = ESP_DOWNMIX_OUT_CTX_LEFT_RIGHT,                \
             .mode = ESP_DOWNMIX_WORK_MODE_BYPASS,                     \
             .output_type = ESP_DOWNMIX_OUTPUT_TYPE_TWO_CHANNEL,       \
-            .source_num = SOURCE_NUM_MAX,                             \
         },                                                            \
         .max_sample = MIXER_BUF_SIZE,                                    \
         .out_rb_size = MIXER_RINGBUFFER_SIZE,                       \
