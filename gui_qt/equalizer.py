@@ -1,7 +1,8 @@
 from PySide2 import QtCore as Qc
 from PySide2 import QtWidgets as Qw
-from PySide2 import QtGui as Qg
 import asyncio
+
+from jumpSlider import JumpSlider
 
 class Equalizer(Qw.QWidget):
     def __init__(self, parent=None):
@@ -118,103 +119,3 @@ class EqualizerBand(Qw.QWidget):
         
     def update_db_value(self, value: int):
         self.db_value_label.setText(f'{value} dB')
-
-# class DiffSurround(Qw.QWidget):
-#     def __init__(self, parent=None):
-#         super().__init__(parent)
-        
-#         self.slider = JumpSlider(Qc.Qt.Horizontal, parent=self)
-#         self.slider.setMinimum(0)
-#         self.slider.setMaximum(500)
-#         self.slider.setSingleStep(1)
-#         self.slider.setPageStep(1)
-#         self.slider.setTickInterval(10)
-#         self.slider.setTickPosition(Qw.QSlider.TicksBothSides)
-#         self.slider.setSizePolicy(
-#             Qw.QSizePolicy.Expanding, Qw.QSizePolicy.Fixed)
-#         self.slider.valueChanged.connect(lambda val: self.do_diff_surround_update(val / 10))
-#         self.slider.valueChanged.connect(lambda val: self.delay_ms_label.setText(f'{round(val / 10, 1)} ms'))
-        
-#         self.delay_ms_label = Qw.QLabel("0.0 ms")
-#         self.delay_ms_label.setFixedWidth(50)
-        
-#         self.layout = Qw.QHBoxLayout()
-#         self.layout.addWidget(self.slider)
-#         self.layout.addWidget(self.delay_ms_label)
-        
-#         self.setLayout(self.layout)
-#         self.show()
-        
-#     def load_settings(self):
-#         # delay_ms = self.parent().parent().parent().ser_man.get_diff_surround_ms()
-#         # self.slider.setValue(int(delay_ms * 10))
-#         pass
-        
-#     def do_diff_surround_update(self, delay_ms):
-#         # self.parent().parent().parent().ser_man.set_diff_surround_ms(delay_ms)
-#         pass
-
-# class FixedLabel(Qw.QLabel):
-#     def __init__(self, text, max_text, parent=None:)
-
-# https://stackoverflow.com/questions/52689047/moving-qslider-to-mouse-click-position
-# https://stackoverflow.com/questions/46147290/pyqt5-check-if-mouse-is-held-down-in-enter-event
-class JumpSlider(Qw.QSlider):
-    def __init__(self, orientation, parent=None):
-        super().__init__(orientation, parent)
-        self.setAcceptDrops(True)
-        self.dragstart = None
-        
-    def mousePressEvent(self, event):
-        super().mousePressEvent(event)
-        if event.buttons() & Qc.Qt.LeftButton:
-            val = self.pixelPosToRangeValue(event.pos())
-            self.setValue(val)
-            self.dragstart = event.pos()
-    
-    def mouseReleaseEvent(self, event):
-        self.dragstart = None
-
-    def mouseMoveEvent(self, event):
-        super().mouseMoveEvent(event)
-        start_drag_distance = 60
-        if self.orientation() == Qc.Qt.Horizontal:
-            if (self.dragstart is not None and
-                event.buttons() & Qc.Qt.LeftButton and
-                abs((event.pos() - self.dragstart).y()) > start_drag_distance):
-                self.dragstart = None
-                drag = Qg.QDrag(self)
-                drag.setMimeData(Qc.QMimeData())
-                drag.exec_(Qc.Qt.LinkAction)
-        else:
-            if (self.dragstart is not None and
-            event.buttons() & Qc.Qt.LeftButton and
-            abs((event.pos() - self.dragstart).x()) > start_drag_distance):
-                self.dragstart = None
-                drag = Qg.QDrag(self)
-                drag.setMimeData(Qc.QMimeData())
-                drag.exec_(Qc.Qt.LinkAction)
-            
-    def dragEnterEvent(self, event):
-        event.acceptProposedAction()
-        val = self.pixelPosToRangeValue(event.pos())
-        self.setValue(val)
-
-    def pixelPosToRangeValue(self, pos):
-        opt = Qw.QStyleOptionSlider()
-        self.initStyleOption(opt)
-        gr = self.style().subControlRect(Qw.QStyle.CC_Slider, opt, Qw.QStyle.SC_SliderGroove, self)
-        sr = self.style().subControlRect(Qw.QStyle.CC_Slider, opt, Qw.QStyle.SC_SliderHandle, self)
-
-        if self.orientation() == Qc.Qt.Horizontal:
-            sliderLength = sr.width()
-            sliderMin = gr.x()
-            sliderMax = gr.right() - sliderLength + 1
-        else:
-            sliderLength = sr.height()
-            sliderMin = gr.y()
-            sliderMax = gr.bottom() - sliderLength + 1
-        pr = pos - sr.center() + sr.topLeft()
-        p = pr.x() if self.orientation() == Qc.Qt.Horizontal else pr.y()
-        return Qw.QStyle.sliderValueFromPosition(self.minimum(), self.maximum(), p - sliderMin,
-                                               sliderMax - sliderMin, opt.upsideDown)
