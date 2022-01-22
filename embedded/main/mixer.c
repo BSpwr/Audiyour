@@ -8,6 +8,9 @@
 #include "audio_element.h"
 #include "mixer.h"
 #include "audio_type_def.h"
+#include "math.h"
+#include "globals.h"
+
 static const char *TAG = "MIXER";
 
 // #define DEBUG_DOWNMIX_ISSUE
@@ -197,6 +200,81 @@ static esp_err_t mixer_close(audio_element_handle_t self)
     return ESP_OK;
 }
 
+/**
+* @brief      Processes the stream through mixing.
+*
+* @param      inbuf                the buffer that stores the input stream, which is in PCM format
+* @param      outbuf               the buffer that stores the output stream, which is in PCM format
+* @param      sample               The number of samples to be processed
+*
+* @return     The length of the output stream (in bytes), which is also in PCM format. A negative return value indicates an error has occurred.
+*/
+
+int actually_mixer_process(unsigned char *inbuf[], unsigned char *outbuf, const int num_samples) {
+
+    int16_t left_sample, right_sample;
+    char * left_sample_p = (char *) &left_sample;
+    char * right_sample_p = (char *) &right_sample;
+    float work_left, work_right;
+
+    // https://www.esp32.com/viewtopic.php?f=20&t=20171
+    for (int i = 0; i < num_samples * 2 * sizeof(short); i+=4) {
+        outbuf[i] = 0;
+        outbuf[i+1] = 0;
+        outbuf[i+2] = 0;
+        outbuf[i+3] = 0;
+        work_left = 0;
+        work_right = 0;
+
+        if (g_mixer_enable_line_in) {
+                    right_sample_p[0] = inbuf[0][i];
+            right_sample_p[1] = inbuf[0][i+1];
+
+            left_sample_p[0] = inbuf[0][i+2];
+            left_sample_p[1] = inbuf[0][i+3];
+
+            work_right += (float)(right_sample) * g_source_gain_ratios[0];
+            
+            work_left += (float)(left_sample) * g_source_gain_ratios[0];
+        }
+
+        if (g_mixer_enable_bluetooth_a2dp_in) {
+                    right_sample_p[0] = inbuf[1][i];
+            right_sample_p[1] = inbuf[1][i+1];
+
+            left_sample_p[0] = inbuf[1][i+2];
+            left_sample_p[1] = inbuf[1][i+3];
+
+            work_right += (float)(right_sample) * g_source_gain_ratios[1];
+            
+            work_left += (float)(left_sample) * g_source_gain_ratios[1];
+        }
+
+        // for (int input_num = 0; input_num < 2; input_num++) {
+        //     right_sample_p[0] = inbuf[input_num][i];
+        //     right_sample_p[1] = inbuf[input_num][i+1];
+
+        //     left_sample_p[0] = inbuf[input_num][i+2];
+        //     left_sample_p[1] = inbuf[input_num][i+3];
+
+        //     work_right += (float)(right_sample) * g_source_gain_ratios[input_num];
+            
+        //     work_left += (float)(left_sample) * g_source_gain_ratios[input_num];
+        // }
+
+        right_sample = (int16_t)(work_right);
+        left_sample = (int16_t)(work_left);
+
+        outbuf[i] = right_sample_p[0];
+        outbuf[i+1] = right_sample_p[1];
+
+        outbuf[i+2] = left_sample_p[0];
+        outbuf[i+3] = left_sample_p[1];
+    }
+
+    return num_samples * 2 * sizeof(short);
+}
+
 static int mixer_process(audio_element_handle_t self, char *in_buffer, int in_len)
 {
     downmix_t *downmix = (downmix_t *)audio_element_getdata(self);
@@ -276,7 +354,7 @@ static int mixer_process(audio_element_handle_t self, char *in_buffer, int in_le
     if (status_end == downmix->downmix_info.source_num || (status_end == 1 && downmix->downmix_info.mode == ESP_DOWNMIX_WORK_MODE_BYPASS)) {
         return ESP_OK;
     }
-    ret = esp_downmix_process(downmix->downmix_handle, downmix->inbuf, downmix->outbuf, downmix->max_sample, downmix->downmix_info.mode);
+    ret = actually_mixer_process(downmix->inbuf, downmix->outbuf, downmix->max_sample);
 
 #ifdef DEBUG_DOWNMIX_ISSUE
     ret = fwrite((char *)downmix->outbuf, 1, ret, output);

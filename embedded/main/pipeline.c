@@ -214,17 +214,17 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
 
     ESP_LOGI(TAG, "[08] Connect raw streams to mixer");
     audiyour_pipeline->rb_jack_stream_raw = audio_element_get_input_ringbuf(audiyour_pipeline->jack_stream_raw);
-    mixer_set_input_rb(audiyour_pipeline->mixer, audiyour_pipeline->rb_jack_stream_raw, 1);
+    mixer_set_input_rb(audiyour_pipeline->mixer, audiyour_pipeline->rb_jack_stream_raw, 0);
 
     audiyour_pipeline->rb_bt_stream_raw = audio_element_get_input_ringbuf(audiyour_pipeline->bt_stream_raw);
-    mixer_set_input_rb(audiyour_pipeline->mixer, audiyour_pipeline->rb_bt_stream_raw, 0);
+    mixer_set_input_rb(audiyour_pipeline->mixer, audiyour_pipeline->rb_bt_stream_raw, 1);
 
     ESP_LOGI(TAG, "[09] Register all elements to audio pipeline");
     audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->mixer, "mixer");
     audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->equalizer, "equalizer");
     audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->i2s_stream_writer, "i2s");
 
-    ESP_LOGI(TAG, "[10] Link it together [Bluetooth]-->bt_stream_reader-->i2s_stream_writer-->[codec_chip]");
+    ESP_LOGI(TAG, "[10] Link it together mixer-->equalizer-->i2s_stream_writer-->[codec_chip]");
     const char *link_tag[3] = {"mixer", "equalizer", "i2s"};
     audio_pipeline_link(audiyour_pipeline->pipeline, &link_tag[0], 3);
 
