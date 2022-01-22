@@ -98,10 +98,12 @@ static struct gatts_profile_inst audiyour_profile_tab[PROFILE_NUM] = {
 };
 
 /* Service */
-static const uint16_t GATTS_SERVICE_UUID_TEST      = 0x00FF;
-static const uint16_t GATTS_CHAR_UUID_TEST_A       = 0xFF01;
-static const uint16_t GATTS_CHAR_UUID_TEST_B       = 0xFF02;
-static const uint16_t GATTS_CHAR_UUID_TEST_C       = 0xFF03;
+static const uint16_t GATTS_SERVICE_UUID_TEST                       = 0x00FF;
+static const uint16_t GATTS_CHAR_EQ_GAINS_VAL                       = 0xFF01;
+static const uint16_t GATTS_CHAR_MIXER_INPUT_GAINS_VAL              = 0xFF02;
+static const uint16_t GATTS_CHAR_MIXER_ENABLE_JACK_IN_VAL           = 0xFF03;
+static const uint16_t GATTS_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN_VAL = 0xFF04;
+static const uint16_t GATTS_CHAR_OUTPUT_GAIN_VAL                    = 0xFF05;
 
 static const uint16_t primary_service_uuid         = ESP_GATT_UUID_PRI_SERVICE;
 static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
@@ -123,10 +125,9 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     [IDX_CHAR_EQ_GAINS]     =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write}},
-
     /* Characteristic Value */
     [IDX_CHAR_EQ_GAINS_VAL] =
-    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_A, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_EQ_GAINS_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(g_equalizer_gains), (uint8_t *)g_equalizer_gains}},
 
     /* Client Characteristic Configuration Descriptor */
@@ -135,23 +136,39 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     //   sizeof(uint16_t), sizeof(heart_measurement_ccc), (uint8_t *)heart_measurement_ccc}},
 
     /* Characteristic Declaration */
-    [IDX_CHAR_INPUT_GAINS]      =
+    [IDX_CHAR_MIXER_INPUT_GAINS]      =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write}},
-
     /* Characteristic Value */
-    [IDX_CHAR_INPUT_GAINS_VAL]  =
-    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_B, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+    [IDX_CHAR_MIXER_INPUT_GAINS_VAL]  =
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_MIXER_INPUT_GAINS_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(g_source_gains), (uint8_t *)g_source_gains}},
+
+    /* Characteristic Declaration */
+    [IDX_CHAR_MIXER_ENABLE_JACK_IN]      =
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
+      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write}},
+    /* Characteristic Value */
+    [IDX_CHAR_MIXER_ENABLE_JACK_IN_VAL]  =
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_MIXER_ENABLE_JACK_IN_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(g_mixer_enable_line_in), (uint8_t *)&g_mixer_enable_line_in}},
+
+    /* Characteristic Declaration */
+    [IDX_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN]      =
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
+      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write}},
+    /* Characteristic Value */
+    [IDX_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN_VAL]  =
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(g_mixer_enable_bluetooth_a2dp_in), (uint8_t *)&g_mixer_enable_bluetooth_a2dp_in}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_OUTPUT_GAIN]      =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write}},
-
     /* Characteristic Value */
     [IDX_CHAR_OUTPUT_GAIN_VAL]  =
-    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_C, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_OUTPUT_GAIN_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(g_output_gain), (uint8_t *)&g_output_gain}},
 
 };
@@ -313,7 +330,7 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     memcpy(rsp.attr_value.value, g_equalizer_gains, sizeof(g_equalizer_gains));
                     esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
                             ESP_GATT_OK, &rsp);
-            } else if (gatt_handle_table[IDX_CHAR_INPUT_GAINS_VAL] == param->read.handle) {
+            } else if (gatt_handle_table[IDX_CHAR_MIXER_INPUT_GAINS_VAL] == param->read.handle) {
                                     esp_gatt_rsp_t rsp;
                     memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
                     rsp.attr_value.handle = param->read.handle;
@@ -365,11 +382,41 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                         else 
                             esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_INVALID_CFG, NULL);
                     }
-                } else if (gatt_handle_table[IDX_CHAR_INPUT_GAINS_VAL] == param->write.handle) {
+                } else if (gatt_handle_table[IDX_CHAR_MIXER_INPUT_GAINS_VAL] == param->write.handle) {
                     bool data_valid = param->write.len == 2;
 
                     if (data_valid) {
                         memcpy(g_source_gains, param->write.value, param->write.len);
+
+                        update_g_source_gain_ratios();
+                    }
+
+                    /* send response when param->write.need_rsp is true*/
+                    if (param->write.need_rsp){
+                        if (data_valid)
+                            esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
+                        else 
+                            esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_INVALID_CFG, NULL);
+                    }
+                } else if (gatt_handle_table[IDX_CHAR_MIXER_ENABLE_JACK_IN_VAL] == param->write.handle) {
+                    bool data_valid = param->write.len == 1;
+
+                    if (data_valid) {
+                        g_mixer_enable_line_in = *param->write.value;
+                    }
+
+                    /* send response when param->write.need_rsp is true*/
+                    if (param->write.need_rsp){
+                        if (data_valid)
+                            esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
+                        else 
+                            esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_INVALID_CFG, NULL);
+                    }
+                } else if (gatt_handle_table[IDX_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN_VAL] == param->write.handle) {
+                    bool data_valid = param->write.len == 1;
+
+                    if (data_valid) {
+                        g_mixer_enable_bluetooth_a2dp_in = *param->write.value;
                     }
 
                     /* send response when param->write.need_rsp is true*/

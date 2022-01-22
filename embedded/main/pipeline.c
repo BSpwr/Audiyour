@@ -43,36 +43,36 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
 {
     ESP_LOGI(TAG, "INSIDE input_key_service_cb");
     if (evt->type == INPUT_KEY_SERVICE_ACTION_CLICK_RELEASE) {
-        ESP_LOGI(TAG, "[ * ] input key id is %d", (int)evt->data);
+        ESP_LOGI(TAG, "[*] input key id is %d", (int)evt->data);
         switch ((int)evt->data) {
             case INPUT_KEY_USER_ID_PLAY:
-                ESP_LOGI(TAG, "[ * ] [Play] play");
+                ESP_LOGI(TAG, "[*] [Play] play");
                 periph_bt_play(g_audiyour_pipeline.bt_periph);
                 break;
             case INPUT_KEY_USER_ID_SET:
-                ESP_LOGI(TAG, "[ * ] [Set] pause");
+                ESP_LOGI(TAG, "[*] [Set] pause");
                 periph_bt_pause(g_audiyour_pipeline.bt_periph);
                 break;
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
             case INPUT_KEY_USER_ID_VOLUP:
-                ESP_LOGI(TAG, "[ * ] [long Vol+] Vol+");
+                ESP_LOGI(TAG, "[*] [long Vol+] Vol+");
                 periph_bt_volume_up(g_audiyour_pipeline.bt_periph);
                 break;
             case INPUT_KEY_USER_ID_VOLDOWN:
-                ESP_LOGI(TAG, "[ * ] [long Vol-] Vol-");
+                ESP_LOGI(TAG, "[*] [long Vol-] Vol-");
                 periph_bt_volume_down(g_audiyour_pipeline.bt_periph);
                 break;
 #endif
         }
     } else if (evt->type == INPUT_KEY_SERVICE_ACTION_PRESS) {
-        ESP_LOGI(TAG, "[ * ] input key id is %d", (int)evt->data);
+        ESP_LOGI(TAG, "[*] input key id is %d", (int)evt->data);
         switch ((int)evt->data) {
             case INPUT_KEY_USER_ID_VOLUP:
-                ESP_LOGI(TAG, "[ * ] [long Vol+] next");
+                ESP_LOGI(TAG, "[*] [long Vol+] next");
                 periph_bt_avrc_next(g_audiyour_pipeline.bt_periph);
                 break;
             case INPUT_KEY_USER_ID_VOLDOWN:
-                ESP_LOGI(TAG, "[ * ] [long Vol-] Previous");
+                ESP_LOGI(TAG, "[*] [long Vol-] Previous");
                 periph_bt_avrc_prev(g_audiyour_pipeline.bt_periph);
                 break;
         }
@@ -86,7 +86,7 @@ void pipeline_event_listener_task() {
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(g_audiyour_pipeline.evt, &msg, portMAX_DELAY);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
+            ESP_LOGE(TAG, "[*] Event interface error : %d", ret);
             continue;
         }
 
@@ -95,7 +95,7 @@ void pipeline_event_listener_task() {
             audio_element_info_t music_info = {0};
             audio_element_getinfo(g_audiyour_pipeline.bt_stream_reader, &music_info);
 
-            ESP_LOGI(TAG, "[ * ] Receive music info from Bluetooth, sample_rates=%d, bits=%d, ch=%d",
+            ESP_LOGI(TAG, "[*] Receive music info from Bluetooth, sample_rates=%d, bits=%d, ch=%d",
                      music_info.sample_rates, music_info.bits, music_info.channels);
 
             audio_element_setinfo(g_audiyour_pipeline.i2s_stream_writer, &music_info);
@@ -110,34 +110,34 @@ void pipeline_event_listener_task() {
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) g_audiyour_pipeline.i2s_stream_writer
             && msg.cmd == AEL_MSG_CMD_REPORT_STATUS
             && (((int)msg.data == AEL_STATUS_STATE_STOPPED) || ((int)msg.data == AEL_STATUS_STATE_FINISHED))) {
-            ESP_LOGW(TAG, "[ * ] Stop event received");
+            ESP_LOGW(TAG, "[*] Stop event received");
             break;
         }
     }
 }
 
 void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
-
-    ESP_LOGI(TAG, "[ 2 ] Start codec chip");
+    ESP_LOGI(TAG, "[01] Start codec chip");
+    // initialize audio board dac and audio_hal
     audiyour_pipeline->board_handle = audio_board_init();
     audio_hal_ctrl_codec(audiyour_pipeline->board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START); // instead of AUDIO_HAL_CODEC_LINE_IN
     es8388_write_reg(ES8388_ADCCONTROL2, ADC_INPUT_LINPUT2_RINPUT2);
     es8388_write_reg(ES8388_ADCCONTROL1, 0x00);
 
-    ESP_LOGI(TAG, "[ 3 ] Create audio pipeline for playback");
+    ESP_LOGI(TAG, "[02] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
-    audiyour_pipeline->pipeline = audio_pipeline_init(&pipeline_cfg);
+    audiyour_pipeline->pipeline = audio_pipeline_init(&pipeline_cfg); // pipeline for mixing BT + jack
 
     audiyour_pipeline->pipeline_bt_read = audio_pipeline_init(&pipeline_cfg);
     audiyour_pipeline->pipeline_jack_read = audio_pipeline_init(&pipeline_cfg);
 
-    ESP_LOGI(TAG, "[3.2] Create i2s stream to read audio data from codec chip");
+    ESP_LOGI(TAG, "[03] Create i2s stream to read audio data from codec chip");
     i2s_stream_cfg_t i2s_reader_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_reader_cfg.type = AUDIO_STREAM_READER;
     audiyour_pipeline->i2s_stream_reader = i2s_stream_init(&i2s_reader_cfg);
     audio_pipeline_register(audiyour_pipeline->pipeline_jack_read, audiyour_pipeline->i2s_stream_reader, "jack");
 
-    ESP_LOGI(TAG, "[4] Create i2s stream to write data to codec chip");
+    ESP_LOGI(TAG, "[04] Create i2s stream to write data to codec chip");
     i2s_stream_cfg_t i2s_writer_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_writer_cfg.type = AUDIO_STREAM_WRITER;
     audiyour_pipeline->i2s_stream_writer = i2s_stream_init(&i2s_writer_cfg);
@@ -153,7 +153,7 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
         set_gain; // The size of gain array should be the multiplication of NUMBER_BAND and number channels of audio stream data. The minimum of gain is -13 dB.
     audiyour_pipeline->equalizer = equalizer_init(&eq_cfg);
 
-    ESP_LOGI(TAG, "[4.1] Get Bluetooth stream");
+    ESP_LOGI(TAG, "[05] Get Bluetooth stream");
     a2dp_stream_config_t a2dp_config = {
         .type = AUDIO_STREAM_READER,
         .user_callback = {0},
@@ -164,6 +164,7 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
     audiyour_pipeline->bt_stream_reader = a2dp_stream_init(&a2dp_config);
     audio_pipeline_register(audiyour_pipeline->pipeline_bt_read, audiyour_pipeline->bt_stream_reader, "bt");
 
+    ESP_LOGI(TAG, "[06] Setup raw streams for use in mixer");
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
     raw_cfg.type = AUDIO_STREAM_WRITER;
     audiyour_pipeline->bt_stream_raw = raw_stream_init(&raw_cfg);
@@ -211,27 +212,28 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
     source_information[1] = source_info_newcome;
     source_info_init(audiyour_pipeline->mixer, source_information);
 
+    ESP_LOGI(TAG, "[08] Connect raw streams to mixer");
     audiyour_pipeline->rb_jack_stream_raw = audio_element_get_input_ringbuf(audiyour_pipeline->jack_stream_raw);
-    mixer_set_input_rb(audiyour_pipeline->mixer, audiyour_pipeline->rb_jack_stream_raw, 1);
+    mixer_set_input_rb(audiyour_pipeline->mixer, audiyour_pipeline->rb_jack_stream_raw, 0);
 
     audiyour_pipeline->rb_bt_stream_raw = audio_element_get_input_ringbuf(audiyour_pipeline->bt_stream_raw);
-    mixer_set_input_rb(audiyour_pipeline->mixer, audiyour_pipeline->rb_bt_stream_raw, 0);
+    mixer_set_input_rb(audiyour_pipeline->mixer, audiyour_pipeline->rb_bt_stream_raw, 1);
 
-    ESP_LOGI(TAG, "[4.2] Register all elements to audio pipeline");
+    ESP_LOGI(TAG, "[09] Register all elements to audio pipeline");
     audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->mixer, "mixer");
     audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->equalizer, "equalizer");
     audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->i2s_stream_writer, "i2s");
 
-    ESP_LOGI(TAG, "[4.3] Link it together [Bluetooth]-->bt_stream_reader-->i2s_stream_writer-->[codec_chip]");
+    ESP_LOGI(TAG, "[10] Link it together mixer-->equalizer-->i2s_stream_writer-->[codec_chip]");
     const char *link_tag[3] = {"mixer", "equalizer", "i2s"};
     audio_pipeline_link(audiyour_pipeline->pipeline, &link_tag[0], 3);
 
-    ESP_LOGI(TAG, "[ 5 ] Initialize peripherals");
+    ESP_LOGI(TAG, "[11] Initialize peripherals");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     audiyour_pipeline->periph_set = esp_periph_set_init(&periph_cfg);
     audio_board_key_init(audiyour_pipeline->periph_set);
 
-    ESP_LOGI(TAG, "[ 5.1 ] Create and start input key service");
+    ESP_LOGI(TAG, "[12] Create and start input key service");
     input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
     input_key_service_cfg_t input_cfg = INPUT_KEY_SERVICE_DEFAULT_CONFIG();
     input_cfg.handle = audiyour_pipeline->periph_set;
@@ -239,32 +241,32 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
     input_key_service_add_key(audiyour_pipeline->input_ser, input_key_info, INPUT_KEY_NUM);
     periph_service_set_callback(audiyour_pipeline->input_ser, input_key_service_cb, NULL);
 
-    ESP_LOGI(TAG, "[5.2] Create Bluetooth peripheral");
+    ESP_LOGI(TAG, "[13] Create Bluetooth peripheral");
     audiyour_pipeline->bt_periph = bt_create_periph();
 
-    ESP_LOGI(TAG, "[5.3] Start all peripherals");
+    ESP_LOGI(TAG, "[14] Start all peripherals");
     esp_periph_start(audiyour_pipeline->periph_set, audiyour_pipeline->bt_periph);
 
-    ESP_LOGI(TAG, "[ 6 ] Set up  event listener");
+    ESP_LOGI(TAG, "[15] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audiyour_pipeline->evt = audio_event_iface_init(&evt_cfg);
 
-    ESP_LOGI(TAG, "[6.1] Listening event from all elements of pipeline");
+    ESP_LOGI(TAG, "[16] Listening event from all elements of pipeline");
     audio_pipeline_set_listener(audiyour_pipeline->pipeline_jack_read, audiyour_pipeline->evt);
     audio_pipeline_set_listener(audiyour_pipeline->pipeline_bt_read, audiyour_pipeline->evt);
     audio_pipeline_set_listener(audiyour_pipeline->pipeline, audiyour_pipeline->evt);
-    //audio_event_iface_set_listener(esp_periph_set_get_event_iface(audiyour_pipeline->periph_set), audiyour_pipeline->evt);
+    // audio_event_iface_set_listener(esp_periph_set_get_event_iface(audiyour_pipeline->periph_set), audiyour_pipeline->evt);
     mixer_set_output_type(audiyour_pipeline->mixer, PLAY_STATUS);
     mixer_set_input_rb_timeout(audiyour_pipeline->mixer, 50, INDEX_BASE_STREAM);
     mixer_set_input_rb_timeout(audiyour_pipeline->mixer, 50, INDEX_NEWCOME_STREAM);
     mixer_set_work_mode(audiyour_pipeline->mixer, ESP_DOWNMIX_WORK_MODE_SWITCH_ON);
 
-    ESP_LOGI(TAG, "[ 7 ] Start audio_pipeline");
+    ESP_LOGI(TAG, "[17] Start audio_pipeline");
     audio_pipeline_run(audiyour_pipeline->pipeline_jack_read);
     audio_pipeline_run(audiyour_pipeline->pipeline_bt_read);
     audio_pipeline_run(audiyour_pipeline->pipeline);
 
-    ESP_LOGI(TAG, "[ 8 ] Listen for all pipeline events");
+    ESP_LOGI(TAG, "[18] Listen for all pipeline events");
     BaseType_t xReturned;
 
     /* Create the task, storing the handle. */
@@ -274,7 +276,7 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
                     4096,      /* Stack size in words, not bytes. */
                     NULL,    /* Parameter passed into the task. */
                     tskIDLE_PRIORITY,/* Priority at which the task is created. */
-                    &audiyour_pipeline->event_listener_task );      /* Used to pass out the created task's handle. */
+                    &audiyour_pipeline->event_listener_task);      /* Used to pass out the created task's handle. */
 
     if( xReturned == pdPASS )
     {
@@ -285,7 +287,6 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
 }
 
 void audiyour_pipeline_a2dp_deinit(audiyour_pipeline_a2dp* audiyour_pipeline) {
-    // TODO: properly deinit
     vTaskDelete(audiyour_pipeline->event_listener_task);
 
     audio_pipeline_stop(audiyour_pipeline->pipeline);
@@ -323,6 +324,7 @@ void audiyour_pipeline_a2dp_deinit(audiyour_pipeline_a2dp* audiyour_pipeline) {
     audio_pipeline_unregister(audiyour_pipeline->pipeline, audiyour_pipeline->equalizer);
     audio_pipeline_unregister(audiyour_pipeline->pipeline, audiyour_pipeline->i2s_stream_writer);
 
+    /* Deinit all resources */
     audio_element_deinit(audiyour_pipeline->i2s_stream_reader);
     audio_element_deinit(audiyour_pipeline->bt_stream_reader);
     audio_element_deinit(audiyour_pipeline->bt_stream_raw);
@@ -331,9 +333,10 @@ void audiyour_pipeline_a2dp_deinit(audiyour_pipeline_a2dp* audiyour_pipeline) {
     audio_element_deinit(audiyour_pipeline->equalizer);
     audio_element_deinit(audiyour_pipeline->i2s_stream_writer);
 
+    /* Deinit periph service and periph set */
     periph_service_destroy(audiyour_pipeline->input_ser);
     esp_periph_set_destroy(audiyour_pipeline->periph_set);
 
+    /* Deinit audio board */
     audio_board_deinit(audiyour_pipeline->board_handle);
 }
-        
