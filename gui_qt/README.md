@@ -1,7 +1,7 @@
 # Audiyour QT GUI
 
 ## Prerequisites
-- You must have Q5 Framework (GUI Toolkit) installed.
+- You must have Qt5 Framework (GUI Toolkit) installed.
     - Ubuntu or Debian
         - sudo apt install qt5-default
     - Arch or Manjaro
