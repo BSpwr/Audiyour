@@ -3,6 +3,7 @@ from PySide2 import QtWidgets as Qw
 from PySide2 import QtGui as Qg
 
 from equalizer import Equalizer
+from mixer import Mixer
 
 import sys
 import asyncio
@@ -10,30 +11,31 @@ import signal
 from bluetoothManager import BluetoothManager
 from qasync import QEventLoop
 
+
 class MainWindow(Qw.QMainWindow):
     def __init__(self, app, loop, parent=None):
         super().__init__(parent)
 
         self.loop = loop
         self.bt_man = BluetoothManager()
-        
+
         desktop_size = Qg.QGuiApplication.primaryScreen().availableGeometry().size()
-        self.resize(desktop_size.width() * 0.4, desktop_size.height() * 0.5)
-        
+        self.resize(desktop_size.width() * 0.3, desktop_size.height() * 0.7)
+
         # if len(ports) != 0: self.ser_man.set_port(ports[0])
-        
+
         self.setWindowTitle('Audiyour Control')
-        
+
         self.main_ui = MainUI(parent=self)
         # Set the central widget of the Window.
         self.setCentralWidget(self.main_ui)
-        
+
         self.show()
 
     def closeEvent(self, event):
-        # do stuff
+        # Disconnect from GATT server before closing window
         asyncio.ensure_future(self.bt_man.disconnect())
-        event.accept() # let the window close
+        event.accept()
 
 
 class MainUI(Qw.QWidget):
@@ -48,15 +50,15 @@ class MainUI(Qw.QWidget):
         # self.manager.run()
 
         # self.device.write_gain_index(0, 0)
-    
+
         self.equalizer = Equalizer(parent=self)
-        # self.diff_surround = DiffSurround(parent=self)
+        self.mixer = Mixer(parent=self)
 
         self.devices = {}
-                
+
         self.scan = Qw.QPushButton('Scan')
         self.scan.clicked.connect(lambda: asyncio.ensure_future(self.update_devices()))
-        
+
         self.device_sel = DeviceComboBox(parent=self)
         self.device_sel.activated.connect(lambda port_idx: asyncio.ensure_future(self.update_device(port_idx)))
 
@@ -65,7 +67,7 @@ class MainUI(Qw.QWidget):
 
         self.disconnect_btn = Qw.QPushButton('Disconnect')
         self.disconnect_btn.clicked.connect(lambda: asyncio.ensure_future(self.disconnect()))
-        
+
         self.conn_status_layout = Qw.QHBoxLayout()
         self.conn_status_layout.addWidget(self.scan)
         self.conn_status_layout.addWidget(self.device_sel)
@@ -74,29 +76,29 @@ class MainUI(Qw.QWidget):
 
         self.conn_group = Qw.QGroupBox("Connection")
         self.conn_group.setLayout(self.conn_status_layout)
-        
+
         self.equalizer_layout = Qw.QHBoxLayout()
         self.equalizer_layout.addWidget(self.equalizer)
-        
+
         self.equalizer_group = Qw.QGroupBox("Equalizer")
         self.equalizer_group.setLayout(self.equalizer_layout)
-        
-        # self.diff_surround_layout = Qw.QHBoxLayout()
-        # self.diff_surround_layout.addWidget(self.diff_surround)
-        
-        # self.diff_surround_group = Qw.QGroupBox("Differential Surround")
-        # self.diff_surround_group.setLayout(self.diff_surround_layout)
-        
+
+        self.mixer_layout = Qw.QHBoxLayout()
+        self.mixer_layout.addWidget(self.mixer)
+
+        self.mixer_group = Qw.QGroupBox("Mixer")
+        self.mixer_group.setLayout(self.mixer_layout)
+
         self.layout = Qw.QVBoxLayout()
         self.layout.addWidget(self.conn_group)
         self.layout.addWidget(self.equalizer_group)
-        # self.layout.addWidget(self.diff_surround_group)
+        self.layout.addWidget(self.mixer_group)
         self.setLayout(self.layout)
-        
+
         asyncio.ensure_future(self.update_devices())
 
         self.update_conn_status()
-        
+
         self.show()
 
     async def update_devices(self):
@@ -104,7 +106,7 @@ class MainUI(Qw.QWidget):
         for device in devices:
             self.devices[device.name] = device.address
         self.device_sel.updateDevices(devices)
-        
+
     async def update_device(self, port_idx: str):
         self.bt_man.set_address(self.devices[self.device_sel.itemText(port_idx)])
         await self.bt_man.connect()
@@ -116,7 +118,7 @@ class MainUI(Qw.QWidget):
     async def disconnect(self):
         await self.bt_man.disconnect()
         self.update_conn_status()
-    
+
     def update_conn_status(self):
         if self.bt_man.is_connected():
             self.check_conn_label.setText("Device Connected ✔️")
@@ -124,11 +126,12 @@ class MainUI(Qw.QWidget):
             self.check_conn_label.setText("Device Disconnected ✖️")
         pass
 
+
 class DeviceComboBox(Qw.QComboBox):
     def __init__(self, parent=None):
         super().__init__(parent)
         # asyncio.ensure_future(self.updateDevices())
-            
+
     def showPopup(self):
         # asyncio.ensure_future(self.updatePorts())
         super().showPopup()
@@ -143,16 +146,17 @@ class DeviceComboBox(Qw.QComboBox):
 # loop = QEventLoop(app)
 # asyncio.set_event_loop(loop)  # NEW must set the event loop
 
+
 def main():
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    
+
     app = Qw.QApplication(sys.argv)  # Create application
     loop = QEventLoop(app)
-    asyncio.set_event_loop(loop) # Allows for spawing async threads from QT code
+    asyncio.set_event_loop(loop)  # Allows for spawing async threads from QT code
 
     app.setPalette(app.style().standardPalette())
     window = MainWindow(app, loop)  # Create main window
-    
+
     # https://xinhuang.github.io/posts/2017-07-31-common-mistakes-using-python3-asyncio.html
     try:
         loop.run_forever()
@@ -162,6 +166,7 @@ def main():
             loop.run_until_complete(t)
     finally:
         loop.close()
+
 
 if __name__ == '__main__':
     main()
