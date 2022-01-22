@@ -9,10 +9,14 @@ class BluetoothManager:
     def __init__(self):
         self.AUDIYOUR_CONFIG_SERVICE = '000000ff-0000-1000-8000-00805f9b34fb'
         self.EQUALIZER_GAINS_CHARACTERISTIC = '0000ff01-0000-1000-8000-00805f9b34fb'
-        self.MIXER_GAINS_CHARACTERISTIC = ''
+        self.MIXER_GAINS_CHARACTERISTIC = '0000ff02-0000-1000-8000-00805f9b34fb' 
+        self.MIXER_LINE_IN_ENABLE_CHARACTERISTIC = '0000ff03-0000-1000-8000-00805f9b34fb' 
+        self.MIXER_WIRELESS_ENABLE_CHARACTERISTIC = '0000ff04-0000-1000-8000-00805f9b34fb'
 
         self.eq_gains = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.mix_gains = [0, 0]
+        self.mix_line_in_en = True
+        self.mix_wireless_in_en = True
         self.mac_address = None
 
         self.client = None
@@ -77,6 +81,26 @@ class BluetoothManager:
             self.mix_gains[i] = int.from_bytes([value[i]], "little", signed=True)
 
 
+    # TODO: for some reason, this works poorly...
+    async def read_mix_line_in_en(self):
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        value = await self.client.read_gatt_char(self.MIXER_LINE_IN_ENABLE_CHARACTERISTIC)
+        self.mix_line_in_en = bool(int.from_bytes([value[0]], "little", signed=True))
+        print(self.mix_line_in_en)
+
+    # TODO: for some reason, this works poorly...
+    async def read_mix_wireless_in_en(self):
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        value = await self.client.read_gatt_char(self.MIXER_WIRELESS_ENABLE_CHARACTERISTIC)
+        self.mix_wireless_in_en = bool(int.from_bytes([value[0]], "little", signed=True))
+
+
     async def write_eq_gains(self, new_gains):
         await self.connect()
         if self.client is None or not self.client.is_connected:
@@ -127,6 +151,64 @@ class BluetoothManager:
 
         k = await self.client.write_gatt_char(self.MIXER_GAINS_CHARACTERISTIC, new_gains_bytes, response=True)
         # self.eq_gails_characteristic.write_value(new_gains_bytes)
+
+    async def write_mix_line_in_en(self, new_status: bool):
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        this_call = datetime.now()
+
+        if self._last_call is not None:
+            time_since_last_call = this_call - self._last_call
+            if time_since_last_call < self._wait:
+                return
+
+        self._last_call = this_call
+
+        print(new_status)
+
+        if new_status:
+            new_status = 1
+        else:
+            new_status = 0
+
+        new_status_bytes = b''
+        new_status_bytes = new_status.to_bytes(1, "little", signed=True)
+
+        print(new_status_bytes)
+
+        k = await self.client.write_gatt_char(self.MIXER_LINE_IN_ENABLE_CHARACTERISTIC, new_status_bytes, response=True)
+
+    
+    async def write_mix_wireless_in_en(self, new_status: bool):
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        this_call = datetime.now()
+
+        if self._last_call is not None:
+            time_since_last_call = this_call - self._last_call
+            if time_since_last_call < self._wait:
+                return
+
+        self._last_call = this_call
+
+        print(new_status)
+
+        if new_status:
+            new_status = 1
+        else:
+            new_status = 0
+
+        new_status_bytes = b''
+        new_status_bytes = new_status.to_bytes(1, "little", signed=True)
+
+        print(new_status_bytes)
+
+        k = await self.client.write_gatt_char(self.MIXER_WIRELESS_ENABLE_CHARACTERISTIC, new_status_bytes, response=True)
+
 
 
     async def write_eq_gain_index(self, index, new_gain):

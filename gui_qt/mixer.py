@@ -61,18 +61,35 @@ class Mixer(Qw.QWidget):
             band_w.slider.blockSignals(False)
         # self.set_enable_btn.setChecked(status)
 
+        # TODO: the commented out code below doesn't work but not sure why
+        # await self.parent().parent().bt_man.read_mix_line_in_en()
+        # jack_enable = self.parent().parent().bt_man.mix_line_in_en
+        # self.jack_enable_btn.blockSignals(True)
+        # self.jack_enable_btn.setChecked(jack_enable)
+        # self.jack_enable_btn.blockSignals(False)
+
+        # await self.parent().parent().bt_man.read_mix_wireless_in_en()
+        # wireless_enable = self.parent().parent().bt_man.mix_wireless_in_en
+        # self.wireless_enable_btn.blockSignals(True)
+        # self.wireless_enable_btn.setChecked(wireless_enable)
+        # self.wireless_enable_btn.blockSignals(False)
+
 
     def jack_mixer_enable(self):
         if self.jack_enable_btn.isChecked():
+            asyncio.ensure_future(self.parent().parent().bt_man.write_mix_line_in_en(True))
             self.jack_enable_btn.setText("Disable 3.5mm Jack Input")
         else:
+            asyncio.ensure_future(self.parent().parent().bt_man.write_mix_line_in_en(False))
             self.jack_enable_btn.setText("Enable 3.5mm Jack Input")
 
 
     def wireless_mixer_enable(self):
         if self.wireless_enable_btn.isChecked():
+            asyncio.ensure_future(self.parent().parent().bt_man.write_mix_wireless_in_en(True))
             self.wireless_enable_btn.setText("Disable Bluetooth Input")
         else:
+            asyncio.ensure_future(self.parent().parent().bt_man.write_mix_wireless_in_en(False))
             self.wireless_enable_btn.setText("Enable Bluetooth Input")
 
 
@@ -97,8 +114,8 @@ class MixerBand(Qw.QWidget):
         self.label = label
 
         self.slider = JumpSlider(Qc.Qt.Horizontal, parent=self)
-        self.slider.setMinimum(-20)
-        self.slider.setMaximum(10)
+        self.slider.setMinimum(-40)
+        self.slider.setMaximum(20)
         self.slider.setSingleStep(1)
         self.slider.setPageStep(1)
         self.slider.setTickInterval(1)
