@@ -44,6 +44,7 @@ class MyHomePage extends StatefulWidget {
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
+
 }
 
 
@@ -60,7 +61,7 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             //First
-            CustomSlider(freq[0], gain[0]),
+            CustomSlider(freq[0], gain[0]),/*
             CustomSlider(freq[1], gain[1]),
             CustomSlider(freq[2], gain[2]),
             CustomSlider(freq[3], gain[3]),
@@ -69,7 +70,7 @@ class _MyHomePageState extends State<MyHomePage> {
             CustomSlider(freq[6], gain[6]),
             CustomSlider(freq[7], gain[7]),
             CustomSlider(freq[8], gain[8]),
-            CustomSlider(freq[9], gain[9]),
+            CustomSlider(freq[9], gain[9]),*/
           ],
         )
       )
@@ -93,7 +94,34 @@ class CustomSlider extends StatefulWidget {
   State<CustomSlider> createState() => _CustomSlider();
 }
 
+
+//https://stackoverflow.com/questions/58387596/i-want-to-ask-how-to-throw-the-value-of-the-slider-into-the-textfield-and-the-i
 class _CustomSlider extends State<CustomSlider> {
+
+  final myController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    myController.addListener(_setSliderValue);
+  }
+
+  //Function called by listener when myController changes
+  _setSliderValue() {
+    setState(() {
+      if (double.parse(myController.text).roundToDouble() < -20.0) {
+        widget.gain = -20.0;
+        myController.text = '-20.0';
+      }
+      else if (double.parse(myController.text).roundToDouble() > 20.0) {
+        widget.gain = 20.0;
+        myController.text = '20.0';
+      }
+      else {
+        widget.gain = double.parse(myController.text).roundToDouble();
+      }
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -103,8 +131,13 @@ class _CustomSlider extends State<CustomSlider> {
       children: <Widget>[
         Text(
           widget.freq.toString(),
-          style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+          style: const TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
         ),
+        const Text(
+          'Hz',
+          style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
+        ),
+        //Widget for the slider
         RotatedBox(
             quarterTurns: 3,
             child: Slider(
@@ -115,52 +148,45 @@ class _CustomSlider extends State<CustomSlider> {
               onChanged: (double value) {
                 setState(() {
                   widget.gain = value;
+                  myController.text = value.toString();
                 });
               },
             )
         ),
-
-
-        Text(
-          widget.gain.toString(),
-          style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
+        //Widget for the Text Box
+        SizedBox(
+            width: 40.0,
+            height: 20,
+            child: TextField(
+              textAlignVertical: TextAlignVertical.center,
+              textAlign: TextAlign.center,
+              controller: myController,
+              decoration: const InputDecoration.collapsed (border: OutlineInputBorder(),
+                  hintText: ''
+              ),
+              style: const TextStyle(fontSize: 15.0,
+              fontWeight: FontWeight.bold
+              ),
+              onSubmitted: (String value) {
+                setState(() {
+                  if (double.parse(value) < -20.0) {
+                    widget.gain = -20.0;
+                  }
+                  else if (double.parse(value) > 20.0) {
+                    widget.gain = 20.0;
+                  }
+                  else {
+                    widget.gain = double.parse(value);
+                  }
+                });
+              },
+              )
         ),
-        Text("dB")
+        const Text(
+          'dB',
+          style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
+        )
       ],
     );
   }
 }
-/*
-Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              textBaseline: TextBaseline.alphabetic,
-              children: <Widget>[
-                Text(
-                  freq[9].toString(),
-                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
-                ),
-                RotatedBox(
-                    quarterTurns: 3,
-                    child: Slider(
-                      value: gain[9],
-                      max: 20,
-                      min: -20,
-                      divisions: 40,
-                      onChanged: (double value) {
-                        setState(() {
-                          gain[9] = value;
-                        });
-                      },
-                    )
-                ),
-
-
-                Text(
-                  gain[9].toString(),
-                  style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900),
-                ),
-                Text("dB")
-              ],
-            )
- */
