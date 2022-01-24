@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -57,24 +58,31 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title)
       ),
-      body:  Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            //First
-            CustomSlider(freq[0], gain[0]),/*
-            CustomSlider(freq[1], gain[1]),
-            CustomSlider(freq[2], gain[2]),
-            CustomSlider(freq[3], gain[3]),
-            CustomSlider(freq[4], gain[4]),
-            CustomSlider(freq[5], gain[5]),
-            CustomSlider(freq[6], gain[6]),
-            CustomSlider(freq[7], gain[7]),
-            CustomSlider(freq[8], gain[8]),
-            CustomSlider(freq[9], gain[9]),*/
-          ],
-        )
+      body:  Center(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.vertical,
+          child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  //First
+                  CustomSlider(freq[0], gain[0]),
+                  CustomSlider(freq[1], gain[1]),
+                  CustomSlider(freq[2], gain[2]),
+                  CustomSlider(freq[3], gain[3]),
+                  CustomSlider(freq[4], gain[4]),
+                  CustomSlider(freq[5], gain[5]),
+                  CustomSlider(freq[6], gain[6]),
+                  CustomSlider(freq[7], gain[7]),
+                  CustomSlider(freq[8], gain[8]),
+                  CustomSlider(freq[9], gain[9]),
+                ],
+              )
+          ),
+        ),
       )
-    ;
+      );
   }
 }
 
@@ -137,6 +145,7 @@ class _CustomSlider extends State<CustomSlider> {
           'Hz',
           style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
         ),
+
         //Widget for the slider
         RotatedBox(
             quarterTurns: 3,
@@ -153,6 +162,7 @@ class _CustomSlider extends State<CustomSlider> {
               },
             )
         ),
+
         //Widget for the Text Box
         SizedBox(
             width: 40.0,
@@ -162,24 +172,11 @@ class _CustomSlider extends State<CustomSlider> {
               textAlign: TextAlign.center,
               controller: myController,
               decoration: const InputDecoration.collapsed (border: OutlineInputBorder(),
-                  hintText: ''
+                  hintText: '0.0'
               ),
               style: const TextStyle(fontSize: 15.0,
               fontWeight: FontWeight.bold
               ),
-              onSubmitted: (String value) {
-                setState(() {
-                  if (double.parse(value) < -20.0) {
-                    widget.gain = -20.0;
-                  }
-                  else if (double.parse(value) > 20.0) {
-                    widget.gain = 20.0;
-                  }
-                  else {
-                    widget.gain = double.parse(value);
-                  }
-                });
-              },
               )
         ),
         const Text(
