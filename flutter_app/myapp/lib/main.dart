@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -67,16 +66,16 @@ class _MyHomePageState extends State<MyHomePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   //First
-                  CustomSlider(freq[0], gain[0]),
-                  CustomSlider(freq[1], gain[1]),
-                  CustomSlider(freq[2], gain[2]),
-                  CustomSlider(freq[3], gain[3]),
-                  CustomSlider(freq[4], gain[4]),
-                  CustomSlider(freq[5], gain[5]),
-                  CustomSlider(freq[6], gain[6]),
-                  CustomSlider(freq[7], gain[7]),
-                  CustomSlider(freq[8], gain[8]),
-                  CustomSlider(freq[9], gain[9]),
+                  CustomSlider(freq:freq[0], gain: gain[0]),
+                  CustomSlider(freq:freq[1], gain: gain[1]),
+                  CustomSlider(freq:freq[2], gain:gain[2]),
+                  CustomSlider(freq:freq[3], gain:gain[3]),
+                  CustomSlider(freq:freq[4], gain:gain[4]),
+                  CustomSlider(freq:freq[5], gain:gain[5]),
+                  CustomSlider(freq:freq[6], gain:gain[6]),
+                  CustomSlider(freq:freq[7], gain:gain[7]),
+                  CustomSlider(freq:freq[8], gain:gain[8]),
+                  CustomSlider(freq:freq[9], gain:gain[9]),
                 ],
               )
           ),
@@ -88,9 +87,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
 class CustomSlider extends StatefulWidget {
 
-  int freq;
+  final int freq;
   double gain;
-  CustomSlider(this.freq, this.gain);
+
+  CustomSlider({Key? key, required this.freq, required this.gain}): super(key: key);
 
   /*
   //final String title;
@@ -130,6 +130,7 @@ class _CustomSlider extends State<CustomSlider> {
       }
     });
   }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -141,9 +142,7 @@ class _CustomSlider extends State<CustomSlider> {
           widget.freq.toString(),
           style: const TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
         ),
-        const Text(
-          'Hz',
-          style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
+        const Text('Hz', style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
         ),
 
         //Widget for the slider
@@ -157,6 +156,7 @@ class _CustomSlider extends State<CustomSlider> {
               onChanged: (double value) {
                 setState(() {
                   widget.gain = value;
+                  //Forces a call to _setSliderValue with change
                   myController.text = value.toString();
                 });
               },
@@ -175,13 +175,11 @@ class _CustomSlider extends State<CustomSlider> {
                   hintText: '0.0'
               ),
               style: const TextStyle(fontSize: 15.0,
-              fontWeight: FontWeight.bold
+                fontWeight: FontWeight.bold
               ),
               )
         ),
-        const Text(
-          'dB',
-          style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
+        const Text('dB', style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
         )
       ],
     );
