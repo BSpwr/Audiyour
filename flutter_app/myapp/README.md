@@ -25,4 +25,4 @@ Once the installation is complete you launch the Andriod Virtual Device on the e
 and run the app.
 
 If a physical device is to be chosen, you connect it to Andriod Studio and turn on the
-developer options on the phone and turn on USB Tethering.
+developer options on the phone and turn on USB Debugging.
