@@ -11,9 +11,9 @@ static const uint16_t GATTS_CHAR_OUTPUT_GAIN_VAL                    = 0xFF05;
  */
 
 class DeviceScreen extends StatefulWidget {
-  DeviceScreen({Key? key, required this.device}) : super(key: key);
+  DeviceScreen({Key? key, /*required this.device*/}) : super(key: key);
 
-  final BluetoothDevice device;
+  //final BluetoothDevice device;
   final Map<Guid, List<int>> readValues = {};
   List<double> gain = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
   List<double> mixerGains = [0.0, 0.0];
@@ -43,16 +43,16 @@ class _DeviceScreenState extends State<DeviceScreen> {
   @override
   initState() {
     super.initState();
-    _stateListener = widget.device.state.listen((event) {
-      debugPrint('event :  $event');
-      if (deviceState == event) {
-        return;
-      }
-      setBleConnectionState(event);
-    });
+    // _stateListener = widget.device.state.listen((event) {
+    //   debugPrint('event :  $event');
+    //   if (deviceState == event) {
+    //     return;
+    //   }
+    //   setBleConnectionState(event);
+    // });
     enableBT = true;
     enableAUX = true;
-    connect();
+    // connect();
 
   }
 
@@ -154,20 +154,20 @@ class _DeviceScreenState extends State<DeviceScreen> {
       //_services[2].characteristics[2].write(statusAUX);
     });
 
-    await widget.device.connect(autoConnect: false).timeout(
-        const Duration(milliseconds: 10000),
-        onTimeout: () {
-          returnValue = Future.value(false);
-          debugPrint('timeout failed');
-          setBleConnectionState(BluetoothDeviceState.disconnected);
-        }).then((data) {
-          if (returnValue == null) {
-            debugPrint('connection successful');
-            returnValue = Future.value(true);
-          }
-        });
+    // await widget.device.connect(autoConnect: false).timeout(
+    //     const Duration(milliseconds: 10000),
+    //     onTimeout: () {
+    //       returnValue = Future.value(false);
+    //       debugPrint('timeout failed');
+    //       setBleConnectionState(BluetoothDeviceState.disconnected);
+    //     }).then((data) {
+    //       if (returnValue == null) {
+    //         debugPrint('connection successful');
+    //         returnValue = Future.value(true);
+    //       }
+    //     });
     //Look for services and their charecteristics
-    _services = await widget.device.discoverServices();
+    //_services = await widget.device.discoverServices();
 
     //Read values of Equalizer and Mixer gains
     List<int> tempGain = await _services[2].characteristics[0].read();
@@ -197,12 +197,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
         stateText = 'Disconnecting';
       });
 
-      //Sends currect gain values from mixer and equalizer to device one last time
-      List<int> gainEqualizerInts = widget.gain.map((e) => e.toInt()).toList();
-      List<int> gainMixerInts = widget.gain.map((e) => e.toInt()).toList();
-      _services[2].characteristics[0].write(gainEqualizerInts, withoutResponse: false);
-      _services[2].characteristics[1].write(gainMixerInts, withoutResponse: false);
-      widget.device.disconnect();
+      // //Sends currect gain values from mixer and equalizer to device one last time
+      // List<int> gainEqualizerInts = widget.gain.map((e) => e.toInt()).toList();
+      // List<int> gainMixerInts = widget.gain.map((e) => e.toInt()).toList();
+      // _services[2].characteristics[0].write(gainEqualizerInts, withoutResponse: false);
+      // _services[2].characteristics[1].write(gainMixerInts, withoutResponse: false);
+      //widget.device.disconnect();
       print('###################### Disconnected ####################################');
     } catch (e) {
       print('Could not Disconnect');
@@ -217,7 +217,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.device.name),
+        title: const Text("Non-Android Testing"),
       ),
       body: SingleChildScrollView(
           scrollDirection: Axis.vertical,

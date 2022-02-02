@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Audiyour (BLE Connection)'),
+      home: DeviceScreen(),
     );
   }
 }
@@ -103,7 +103,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void onTap(ScanResult r) {
     //Moves screen to equalizer window
     Navigator.push(context,
-      MaterialPageRoute(builder: (context) => DeviceScreen(device: r.device)),
+      MaterialPageRoute(builder: (context) => DeviceScreen()),
     );
   }
 
