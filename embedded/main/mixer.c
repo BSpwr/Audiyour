@@ -250,18 +250,6 @@ int actually_mixer_process(unsigned char *inbuf[], unsigned char *outbuf, const 
             work_left += (float)(left_sample) * g_source_gain_ratios[1];
         }
 
-        // for (int input_num = 0; input_num < 2; input_num++) {
-        //     right_sample_p[0] = inbuf[input_num][i];
-        //     right_sample_p[1] = inbuf[input_num][i+1];
-
-        //     left_sample_p[0] = inbuf[input_num][i+2];
-        //     left_sample_p[1] = inbuf[input_num][i+3];
-
-        //     work_right += (float)(right_sample) * g_source_gain_ratios[input_num];
-            
-        //     work_left += (float)(left_sample) * g_source_gain_ratios[input_num];
-        // }
-
         right_sample = (int16_t)(work_right);
         left_sample = (int16_t)(work_left);
 

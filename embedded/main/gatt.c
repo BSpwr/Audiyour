@@ -340,6 +340,26 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
                             ESP_GATT_OK, &rsp);
 
+            } else if (gatt_handle_table[IDX_CHAR_MIXER_ENABLE_JACK_IN_VAL] == param->read.handle) {
+                                    esp_gatt_rsp_t rsp;
+                    memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
+                    rsp.attr_value.handle = param->read.handle;
+                    rsp.attr_value.len = 1;
+
+                    memcpy(rsp.attr_value.value, &g_mixer_enable_line_in, 1);
+                    esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
+                            ESP_GATT_OK, &rsp);
+
+            } else if (gatt_handle_table[IDX_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN_VAL] == param->read.handle) {
+                                    esp_gatt_rsp_t rsp;
+                    memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
+                    rsp.attr_value.handle = param->read.handle;
+                    rsp.attr_value.len = 1;
+
+                    memcpy(rsp.attr_value.value, &g_mixer_enable_bluetooth_a2dp_in, 1);
+                    esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
+                            ESP_GATT_OK, &rsp);
+
             } else if (gatt_handle_table[IDX_CHAR_OUTPUT_GAIN_VAL] == param->read.handle) {
                     esp_gatt_rsp_t rsp;
                     memset(&rsp, 0, sizeof(esp_gatt_rsp_t));

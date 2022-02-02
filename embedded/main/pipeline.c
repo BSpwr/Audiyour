@@ -123,6 +123,8 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
     audio_hal_ctrl_codec(audiyour_pipeline->board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START); // instead of AUDIO_HAL_CODEC_LINE_IN
     es8388_write_reg(ES8388_ADCCONTROL2, ADC_INPUT_LINPUT2_RINPUT2);
     es8388_write_reg(ES8388_ADCCONTROL1, 0x00);
+    es8388_write_reg(ES8388_DACCONTROL24, 0b100001);
+    es8388_write_reg(ES8388_DACCONTROL25, 0b100001);
 
     ESP_LOGI(TAG, "[02] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();

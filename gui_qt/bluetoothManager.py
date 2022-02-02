@@ -81,7 +81,6 @@ class BluetoothManager:
             self.mix_gains[i] = int.from_bytes([value[i]], "little", signed=True)
 
 
-    # TODO: for some reason, this works poorly...
     async def read_mix_line_in_en(self):
         await self.connect()
         if self.client is None or not self.client.is_connected:
@@ -89,9 +88,7 @@ class BluetoothManager:
 
         value = await self.client.read_gatt_char(self.MIXER_LINE_IN_ENABLE_CHARACTERISTIC)
         self.mix_line_in_en = bool(int.from_bytes([value[0]], "little", signed=True))
-        print(self.mix_line_in_en)
 
-    # TODO: for some reason, this works poorly...
     async def read_mix_wireless_in_en(self):
         await self.connect()
         if self.client is None or not self.client.is_connected:

@@ -59,20 +59,18 @@ class Mixer(Qw.QWidget):
             band_w.slider.setValue(int(gains[idx]))
             band_w.update_db_value(int(gains[idx]))
             band_w.slider.blockSignals(False)
-        # self.set_enable_btn.setChecked(status)
 
-        # TODO: the commented out code below doesn't work but not sure why
-        # await self.parent().parent().bt_man.read_mix_line_in_en()
-        # jack_enable = self.parent().parent().bt_man.mix_line_in_en
-        # self.jack_enable_btn.blockSignals(True)
-        # self.jack_enable_btn.setChecked(jack_enable)
-        # self.jack_enable_btn.blockSignals(False)
+        await self.parent().parent().bt_man.read_mix_line_in_en()
+        jack_enable = self.parent().parent().bt_man.mix_line_in_en
+        self.jack_enable_btn.blockSignals(True)
+        self.jack_enable_btn.setChecked(jack_enable)
+        self.jack_enable_btn.blockSignals(False)
 
-        # await self.parent().parent().bt_man.read_mix_wireless_in_en()
-        # wireless_enable = self.parent().parent().bt_man.mix_wireless_in_en
-        # self.wireless_enable_btn.blockSignals(True)
-        # self.wireless_enable_btn.setChecked(wireless_enable)
-        # self.wireless_enable_btn.blockSignals(False)
+        await self.parent().parent().bt_man.read_mix_wireless_in_en()
+        wireless_enable = self.parent().parent().bt_man.mix_wireless_in_en
+        self.wireless_enable_btn.blockSignals(True)
+        self.wireless_enable_btn.setChecked(wireless_enable)
+        self.wireless_enable_btn.blockSignals(False)
 
 
     def jack_mixer_enable(self):
