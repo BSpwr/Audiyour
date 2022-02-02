@@ -392,7 +392,8 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     if (data_valid) {
                         memcpy(g_equalizer_gains, param->write.value, param->write.len);
 
-                        update_equalizer_gains(&g_audiyour_pipeline, g_equalizer_gains);
+                        update_g_equalizer_gain_ratios();
+                        // update_equalizer_gains(&g_audiyour_pipeline, g_equalizer_gains);
                     }
 
                     /* send response when param->write.need_rsp is true*/

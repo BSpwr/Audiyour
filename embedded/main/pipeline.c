@@ -26,6 +26,7 @@
 
 #include "globals.h"
 #include "pipeline.h"
+#include "mycomp.h"
 
 static const char *TAG = "PIPELINE";
 
@@ -153,7 +154,7 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
     }
     eq_cfg.set_gain =
         set_gain; // The size of gain array should be the multiplication of NUMBER_BAND and number channels of audio stream data. The minimum of gain is -13 dB.
-    audiyour_pipeline->equalizer = equalizer_init(&eq_cfg);
+    // audiyour_pipeline->equalizer = equalizer_init(&eq_cfg);
 
     ESP_LOGI(TAG, "[05] Get Bluetooth stream");
     a2dp_stream_config_t a2dp_config = {
@@ -223,11 +224,15 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
 
     ESP_LOGI(TAG, "[09] Register all elements to audio pipeline");
     audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->mixer, "mixer");
-    audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->equalizer, "equalizer");
+    // audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->equalizer, "equalizer");
     audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->i2s_stream_writer, "i2s");
 
+    audiyour_pipeline->mycomp = mycomp_init();
+    audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->mycomp, "mycomp");
+
+
     ESP_LOGI(TAG, "[10] Link it together mixer-->equalizer-->i2s_stream_writer-->[codec_chip]");
-    const char *link_tag[3] = {"mixer", "equalizer", "i2s"};
+    const char *link_tag[3] = {"mixer", "mycomp", "i2s"};
     audio_pipeline_link(audiyour_pipeline->pipeline, &link_tag[0], 3);
 
     ESP_LOGI(TAG, "[11] Initialize peripherals");
@@ -323,7 +328,7 @@ void audiyour_pipeline_a2dp_deinit(audiyour_pipeline_a2dp* audiyour_pipeline) {
     audio_pipeline_unregister(audiyour_pipeline->pipeline_bt_read, audiyour_pipeline->bt_stream_raw);
     audio_pipeline_unregister(audiyour_pipeline->pipeline_jack_read, audiyour_pipeline->jack_stream_raw);
     audio_pipeline_unregister(audiyour_pipeline->pipeline, audiyour_pipeline->mixer);
-    audio_pipeline_unregister(audiyour_pipeline->pipeline, audiyour_pipeline->equalizer);
+    // audio_pipeline_unregister(audiyour_pipeline->pipeline, audiyour_pipeline->equalizer);
     audio_pipeline_unregister(audiyour_pipeline->pipeline, audiyour_pipeline->i2s_stream_writer);
 
     /* Deinit all resources */
@@ -332,7 +337,7 @@ void audiyour_pipeline_a2dp_deinit(audiyour_pipeline_a2dp* audiyour_pipeline) {
     audio_element_deinit(audiyour_pipeline->bt_stream_raw);
     audio_element_deinit(audiyour_pipeline->jack_stream_raw);
     audio_element_deinit(audiyour_pipeline->mixer);
-    audio_element_deinit(audiyour_pipeline->equalizer);
+    // audio_element_deinit(audiyour_pipeline->equalizer);
     audio_element_deinit(audiyour_pipeline->i2s_stream_writer);
 
     /* Deinit periph service and periph set */
