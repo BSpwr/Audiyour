@@ -383,17 +383,17 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                 if (gatt_handle_table[IDX_CHAR_EQ_GAINS_VAL] == param->write.handle) {
                     bool data_valid = param->write.len == sizeof(g_equalizer_gains);
 
-                    for (int i = 0; i < sizeof(g_equalizer_gains); i++) {
-                        if ((int8_t)param->write.value[i] < MIN_EQ_GAIN || (int8_t)param->write.value[i] > MAX_EQ_GAIN) {
-                            data_valid = false;
-                        }
-                    }
+                    // TODO: whatever...
+                    // for (int i = 0; i < sizeof(g_equalizer_gains)/sizeof(float); i++) {
+                    //     if ((int8_t)param->write.value[i] < MIN_EQ_GAIN || (int8_t)param->write.value[i] > MAX_EQ_GAIN) {
+                    //         data_valid = false;
+                    //     }
+                    // }
 
                     if (data_valid) {
                         memcpy(g_equalizer_gains, param->write.value, param->write.len);
 
-                        update_g_equalizer_gain_ratios();
-                        // update_equalizer_gains(&g_audiyour_pipeline, g_equalizer_gains);
+                        update_equalizer_gains(&g_audiyour_pipeline, g_equalizer_gains);
                     }
 
                     /* send response when param->write.need_rsp is true*/

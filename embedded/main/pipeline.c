@@ -26,16 +26,24 @@
 
 #include "globals.h"
 #include "pipeline.h"
-#include "mycomp.h"
+#include "equalizer2.h"
 
 static const char *TAG = "PIPELINE";
 
-void update_equalizer_gains(audiyour_pipeline_a2dp* audiyour_pipeline, int8_t equalizer_gains[10]) {
+void update_equalizer_gains(audiyour_pipeline_a2dp* audiyour_pipeline, float equalizer_gains[10]) {
     ESP_LOGI(TAG, "Update_equalizer_gains");
+    if (audiyour_pipeline && audiyour_pipeline->mycomp) {
+        ESP_LOGI(TAG, "Actually update_equalizer_gains");
+        for (int i = 0; i < 10; i++) {
+            equalizer2_set_gain(audiyour_pipeline->mycomp, i, equalizer_gains[i]);
+        }
+    }
+
+    // TODO: legacy
     if (audiyour_pipeline && audiyour_pipeline->equalizer) {
         ESP_LOGI(TAG, "Actually update_equalizer_gains");
         for (int i = 0; i < 10; i++) {
-            equalizer_set_gain_info(audiyour_pipeline->equalizer, i, (int)((int8_t)equalizer_gains[i]), true);
+            equalizer_set_gain_info(audiyour_pipeline->equalizer, i, (int)(equalizer_gains[i]), true);
         }
     }
 }
@@ -227,7 +235,8 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
     // audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->equalizer, "equalizer");
     audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->i2s_stream_writer, "i2s");
 
-    audiyour_pipeline->mycomp = mycomp_init();
+    equalizer2_cfg_t eq2_cfg = DEFAULT_EQUALIZER2_CONFIG();
+    audiyour_pipeline->mycomp = equalizer2_init(&eq2_cfg);
     audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->mycomp, "mycomp");
 
 

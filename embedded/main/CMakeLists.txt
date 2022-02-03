@@ -1,7 +1,8 @@
-idf_component_register(SRCS "mycomp.c" "main.cpp"
+idf_component_register(SRCS "eq_iir_filter.c" "equalizer2.c" "main.cpp"
                             "mixer.c"
                             "gatt.c"
                             "pipeline.c"
                             "globals.c"
-                            "mycomp.c"
+                            "equalizer2.c"
+                            "eq_iir_filter.c"
                     INCLUDE_DIRS ".")

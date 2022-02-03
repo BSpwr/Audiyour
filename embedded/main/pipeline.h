@@ -54,7 +54,9 @@ typedef struct audiyour_pipeline_a2dp {
     audio_element_handle_t mycomp;
 } audiyour_pipeline_a2dp;
 
-void update_equalizer_gains(audiyour_pipeline_a2dp* audiyour_pipeline, int8_t equalizer_gains[10]);
+// void update_equalizer_gains(audiyour_pipeline_a2dp* audiyour_pipeline, int8_t equalizer_gains[10]);
+
+void update_equalizer_gains(audiyour_pipeline_a2dp* audiyour_pipeline, float equalizer_gains[10]);
 
 void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline);
 

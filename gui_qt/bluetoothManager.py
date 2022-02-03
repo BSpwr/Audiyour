@@ -1,3 +1,4 @@
+import struct
 from typing import List
 import qasync
 from bleak import BleakClient, BleakScanner
@@ -13,7 +14,7 @@ class BluetoothManager:
         self.MIXER_LINE_IN_ENABLE_CHARACTERISTIC = '0000ff03-0000-1000-8000-00805f9b34fb' 
         self.MIXER_WIRELESS_ENABLE_CHARACTERISTIC = '0000ff04-0000-1000-8000-00805f9b34fb'
 
-        self.eq_gains = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.eq_gains: list[float] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.mix_gains = [0, 0]
         self.mix_line_in_en = True
         self.mix_wireless_in_en = True
@@ -68,7 +69,8 @@ class BluetoothManager:
 
         value = await self.client.read_gatt_char(self.EQUALIZER_GAINS_CHARACTERISTIC)
         for i in range(0, 10):
-            self.eq_gains[i] = int.from_bytes([value[i]], "little", signed=True)
+            new_gains_bytes = new_gains_bytes + bytearray(struct.pack("<f", i))
+            self.eq_gains[i] = struct.unpack('<f', value[0+i:4+i])[0]
 
 
     async def read_mix_gains(self):
@@ -116,7 +118,8 @@ class BluetoothManager:
 
         new_gains_bytes = b''
         for i in new_gains:
-            new_gains_bytes = new_gains_bytes + i.to_bytes(1, "little", signed=True)
+            new_gains_bytes = new_gains_bytes + bytearray(struct.pack("<f", i))
+            # i.to_bytes(1, "little", signed=True)
 
         print(new_gains_bytes)
 
