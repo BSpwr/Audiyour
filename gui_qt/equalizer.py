@@ -59,11 +59,19 @@ class Equalizer(Qw.QWidget):
             band_w.slider.blockSignals(False)
         # self.set_enable_btn.setChecked(status)
 
+        await self.parent().parent().bt_man.read_eq_enable()
+        set_enable = self.parent().parent().bt_man.eq_enable
+        self.set_enable_btn.blockSignals(True)
+        self.set_enable_btn.setChecked(set_enable)
+        self.set_enable_btn.blockSignals(False)
+
 
     def set_equalizer_enable(self):
         if self.set_enable_btn.isChecked():
+            asyncio.ensure_future(self.parent().parent().bt_man.write_eq_enable(True))
             self.set_enable_btn.setText("Disable Equalizer")
         else:
+            asyncio.ensure_future(self.parent().parent().bt_man.write_eq_enable(False))
             self.set_enable_btn.setText("Enable Equalizer")
 
 

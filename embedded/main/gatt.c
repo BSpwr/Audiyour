@@ -2,6 +2,7 @@
 #include "esp_log.h"
 #include <string.h>
 #include "globals.h"
+#include "equalizer2.h"
 
 #define PROFILE_NUM                 1
 #define PROFILE_APP_IDX             0
@@ -103,7 +104,8 @@ static const uint16_t GATTS_CHAR_EQ_GAINS_VAL                       = 0xFF01;
 static const uint16_t GATTS_CHAR_MIXER_INPUT_GAINS_VAL              = 0xFF02;
 static const uint16_t GATTS_CHAR_MIXER_ENABLE_JACK_IN_VAL           = 0xFF03;
 static const uint16_t GATTS_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN_VAL = 0xFF04;
-static const uint16_t GATTS_CHAR_OUTPUT_GAIN_VAL                    = 0xFF05;
+static const uint16_t GATTS_CHAR_EQ_ENABLE_VAL                      = 0xFF05;
+static const uint16_t GATTS_CHAR_OUTPUT_GAIN_VAL                    = 0xFF06;
 
 static const uint16_t primary_service_uuid         = ESP_GATT_UUID_PRI_SERVICE;
 static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
@@ -129,6 +131,15 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     [IDX_CHAR_EQ_GAINS_VAL] =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_EQ_GAINS_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(g_equalizer_gains), (uint8_t *)g_equalizer_gains}},
+
+    /* Characteristic Declaration */
+    [IDX_CHAR_EQ_ENABLE]     =
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
+      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write}},
+    /* Characteristic Value */
+    [IDX_CHAR_EQ_ENABLE_VAL] =
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_EQ_ENABLE_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(g_equalizer_enable), (uint8_t *)&g_equalizer_enable}},
 
     /* Client Characteristic Configuration Descriptor */
     // [IDX_CHAR_CFG_A]  =
@@ -330,6 +341,16 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     memcpy(rsp.attr_value.value, g_equalizer_gains, sizeof(g_equalizer_gains));
                     esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
                             ESP_GATT_OK, &rsp);
+            } else if (gatt_handle_table[IDX_CHAR_EQ_ENABLE_VAL] == param->read.handle) {
+                                    esp_gatt_rsp_t rsp;
+                    memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
+                    rsp.attr_value.handle = param->read.handle;
+                    rsp.attr_value.len = 1;
+
+                    memcpy(rsp.attr_value.value, &g_equalizer_enable, 1);
+                    esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
+                            ESP_GATT_OK, &rsp);
+
             } else if (gatt_handle_table[IDX_CHAR_MIXER_INPUT_GAINS_VAL] == param->read.handle) {
                                     esp_gatt_rsp_t rsp;
                     memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
@@ -403,7 +424,26 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                         else 
                             esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_INVALID_CFG, NULL);
                     }
-                } else if (gatt_handle_table[IDX_CHAR_MIXER_INPUT_GAINS_VAL] == param->write.handle) {
+                } else if (gatt_handle_table[IDX_CHAR_EQ_ENABLE_VAL] == param->write.handle) {
+                    bool data_valid = param->write.len == 1;
+
+                    if (data_valid) {
+                        g_equalizer_enable = *param->write.value;
+
+                        if (g_audiyour_pipeline.mycomp) {
+                            equalizer2_set_enable(g_audiyour_pipeline.mycomp, g_equalizer_enable);
+                        }
+                    }
+
+                    /* send response when param->write.need_rsp is true*/
+                    if (param->write.need_rsp){
+                        if (data_valid)
+                            esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
+                        else 
+                            esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_INVALID_CFG, NULL);
+                    }
+                } 
+                else if (gatt_handle_table[IDX_CHAR_MIXER_INPUT_GAINS_VAL] == param->write.handle) {
                     bool data_valid = param->write.len == 2;
 
                     if (data_valid) {

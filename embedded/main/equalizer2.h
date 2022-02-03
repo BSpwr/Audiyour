@@ -39,6 +39,6 @@ esp_err_t equalizer2_close(audio_element_handle_t self);
 esp_err_t equalizer2_destroy(audio_element_handle_t self);
 
 esp_err_t equalizer2_set_gain(audio_element_handle_t self, unsigned band_idx, float gain_db);
-esp_err_t equalizer2_set_enabled(audio_element_handle_t self, bool enabled);
+esp_err_t equalizer2_set_enable(audio_element_handle_t self, bool enabled);
 
 #endif // EQUALIZER_H_

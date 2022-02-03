@@ -142,7 +142,7 @@ inline esp_err_t equalizer2_set_gain(audio_element_handle_t self, unsigned band_
     return ESP_OK;
 }
 
-esp_err_t equalizer2_set_enabled(audio_element_handle_t self, bool enabled) {
+esp_err_t equalizer2_set_enable(audio_element_handle_t self, bool enabled) {
     equalizer_t *eq_data = (equalizer_t *)audio_element_getdata(self);
     eq_data->enabled = enabled;
     ESP_LOGI(TAG, "set enable");

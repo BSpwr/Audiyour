@@ -6,6 +6,7 @@
 extern audiyour_pipeline_a2dp g_audiyour_pipeline;
 
 extern float g_equalizer_gains[10];
+extern bool g_equalizer_enable;
 // extern float g_equalizer_gain_ratios[10];
 // {bluetooth_input_gain, line_in_input_gain}
 

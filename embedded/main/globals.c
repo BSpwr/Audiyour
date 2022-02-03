@@ -5,6 +5,7 @@
 audiyour_pipeline_a2dp g_audiyour_pipeline;
 
 float g_equalizer_gains[10]    = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+bool g_equalizer_enable = true;
 // float g_equalizer_gain_ratios[10] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
 
 bool g_mixer_enable_line_in = true;
