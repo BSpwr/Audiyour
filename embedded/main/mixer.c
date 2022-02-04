@@ -227,31 +227,29 @@ int actually_mixer_process(unsigned char *inbuf[], unsigned char *outbuf, const 
         work_right = 0;
 
         if (g_mixer_enable_line_in) {
-                    right_sample_p[0] = inbuf[0][i];
+            right_sample_p[0] = inbuf[0][i];
             right_sample_p[1] = inbuf[0][i+1];
 
             left_sample_p[0] = inbuf[0][i+2];
             left_sample_p[1] = inbuf[0][i+3];
 
-            work_right += (float)(right_sample) * g_source_gain_ratios[0];
-            
-            work_left += (float)(left_sample) * g_source_gain_ratios[0];
+            work_right += i16_to_float(right_sample) * g_source_gain_ratios[0];
+            work_left += i16_to_float(left_sample) * g_source_gain_ratios[0];
         }
 
         if (g_mixer_enable_bluetooth_a2dp_in) {
-                    right_sample_p[0] = inbuf[1][i];
+            right_sample_p[0] = inbuf[1][i];
             right_sample_p[1] = inbuf[1][i+1];
 
             left_sample_p[0] = inbuf[1][i+2];
             left_sample_p[1] = inbuf[1][i+3];
 
-            work_right += (float)(right_sample) * g_source_gain_ratios[1];
-            
-            work_left += (float)(left_sample) * g_source_gain_ratios[1];
+            work_right += i16_to_float(right_sample) * g_source_gain_ratios[1];
+            work_left += i16_to_float(left_sample) * g_source_gain_ratios[1];
         }
 
-        right_sample = (int16_t)(work_right);
-        left_sample = (int16_t)(work_left);
+        right_sample = float_to_i16(work_right);
+        left_sample = float_to_i16(work_left);
 
         outbuf[i] = right_sample_p[0];
         outbuf[i+1] = right_sample_p[1];

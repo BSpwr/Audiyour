@@ -14,8 +14,6 @@ typedef struct equalizer_t {
     bool enabled;
 } equalizer_t;
 
-float taps_g[6];
-
 static inline float directform_I_process(const dfi_iir_filter filter, dfi_iir_filter_buffer buffer, float sample) {
     float cascaded_sample = sample;
 
@@ -108,8 +106,8 @@ int equalizer2_process(audio_element_handle_t self, char *in_buffer, int in_len)
             left_sample_p[0] = in_buffer[i+2];
             left_sample_p[1] = in_buffer[i+3];
 
-            left_sample_f = (float)left_sample;
-            right_sample_f = (float)right_sample;
+            left_sample_f = i16_to_float(left_sample);
+            right_sample_f = i16_to_float(right_sample);
 
             output_left_sample_f = 0;
             output_right_sample_f = 0;
@@ -119,8 +117,8 @@ int equalizer2_process(audio_element_handle_t self, char *in_buffer, int in_len)
                 output_right_sample_f += directform_I_process(eq_data->iir_filter[j], eq_data->iir_buffer[j * 2 + 1], right_sample_f) * eq_data->equalizer_gain_ratios[j];
             }
 
-            left_sample = (int16_t)output_left_sample_f;
-            right_sample = (int16_t)output_right_sample_f;
+            left_sample = float_to_i16(output_left_sample_f);
+            right_sample = float_to_i16(output_right_sample_f);
 
             in_buffer[i] = right_sample_p[0];
             in_buffer[i+1] = right_sample_p[1];
@@ -137,7 +135,7 @@ int equalizer2_process(audio_element_handle_t self, char *in_buffer, int in_len)
 
 inline esp_err_t equalizer2_set_gain(audio_element_handle_t self, unsigned band_idx, float gain_db) {
     equalizer_t *eq_data = (equalizer_t *)audio_element_getdata(self);
-    eq_data->equalizer_gain_ratios[band_idx] = powf(10, gain_db / 20);
+    eq_data->equalizer_gain_ratios[band_idx] = gain_to_ratio(gain_db);
     ESP_LOGI(TAG, "set band ratio[%d] = %f", band_idx, eq_data->equalizer_gain_ratios[band_idx]);
     return ESP_OK;
 }

@@ -21,4 +21,7 @@ void update_g_source_gain_ratios();
 void update_g_equalizer_gain_ratios();
 float gain_to_ratio(float gain);
 
+int16_t float_to_i16(float input);
+float i16_to_float(int16_t input);
+
 #endif // GLOBALS_H_
