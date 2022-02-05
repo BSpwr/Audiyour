@@ -19,7 +19,7 @@ class Mixer(Qw.QWidget):
         self.wireless_enable_btn.setCheckable(True)
         self.wireless_enable_btn.toggled.connect(self.wireless_mixer_enable)
 
-        self.set_defaults_btn = Qw.QPushButton("Set Defaults")
+        self.set_defaults_btn = Qw.QPushButton("Reset")
         self.set_defaults_btn.clicked.connect(self.set_defaults)
 
         self.load_settings_btn = Qw.QPushButton("Load From Device")
