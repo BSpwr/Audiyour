@@ -89,6 +89,7 @@ class BluetoothManager:
         value = await self.client.read_gatt_char(self.MIXER_LINE_IN_ENABLE_CHARACTERISTIC)
         self.mix_line_in_en = bool(int.from_bytes([value[0]], "little", signed=True))
 
+
     async def read_mix_wireless_in_en(self):
         await self.connect()
         if self.client is None or not self.client.is_connected:
@@ -118,7 +119,7 @@ class BluetoothManager:
         for i in new_gains:
             new_gains_bytes = new_gains_bytes + i.to_bytes(1, "little", signed=True)
 
-        print(new_gains_bytes)
+        self.eq_gains = new_gains
 
         k = await self.client.write_gatt_char(self.EQUALIZER_GAINS_CHARACTERISTIC, new_gains_bytes, response=True)
         # self.eq_gails_characteristic.write_value(new_gains_bytes)
@@ -144,10 +145,11 @@ class BluetoothManager:
         for i in new_gains:
             new_gains_bytes = new_gains_bytes + i.to_bytes(1, "little", signed=True)
 
-        print(new_gains_bytes)
+        self.mix_gains = new_gains
 
         k = await self.client.write_gatt_char(self.MIXER_GAINS_CHARACTERISTIC, new_gains_bytes, response=True)
         # self.eq_gails_characteristic.write_value(new_gains_bytes)
+
 
     async def write_mix_line_in_en(self, new_status: bool):
         await self.connect()

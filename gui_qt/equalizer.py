@@ -57,7 +57,13 @@ class Equalizer(Qw.QWidget):
             band_w.slider.setValue(int(gains[idx]))
             band_w.update_db_value(int(gains[idx]))
             band_w.slider.blockSignals(False)
+        # self.set_enable_btn.blockSignals(True)
         # self.set_enable_btn.setChecked(status)
+        # if self.set_enable_btn.isChecked():
+        #     self.set_enable_btn.setText("Disable Equalizer")
+        # else:
+        #     self.set_enable_btn.setText("Enable Equalizer")
+        # self.set_enable_btn.blockSignals(False)
 
 
     def set_equalizer_enable(self):

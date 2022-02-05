@@ -114,6 +114,7 @@ class MainUI(Qw.QWidget):
         if self.bt_man.is_connected():
             # # load values from DSP
             asyncio.ensure_future(self.equalizer.load_settings())
+            asyncio.ensure_future(self.mixer.load_settings())
 
     async def disconnect(self):
         await self.bt_man.disconnect()

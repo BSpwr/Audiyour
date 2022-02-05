@@ -64,12 +64,20 @@ class Mixer(Qw.QWidget):
         jack_enable = self.parent().parent().bt_man.mix_line_in_en
         self.jack_enable_btn.blockSignals(True)
         self.jack_enable_btn.setChecked(jack_enable)
+        if self.jack_enable_btn.isChecked():
+            self.jack_enable_btn.setText("Disable 3.5mm Jack Input")
+        else:
+            self.jack_enable_btn.setText("Enable 3.5mm Jack Input")
         self.jack_enable_btn.blockSignals(False)
 
         await self.parent().parent().bt_man.read_mix_wireless_in_en()
         wireless_enable = self.parent().parent().bt_man.mix_wireless_in_en
         self.wireless_enable_btn.blockSignals(True)
         self.wireless_enable_btn.setChecked(wireless_enable)
+        if self.wireless_enable_btn.isChecked():
+            self.wireless_enable_btn.setText("Disable Bluetooth Input")
+        else:
+            self.wireless_enable_btn.setText("Enable Bluetooth Input")
         self.wireless_enable_btn.blockSignals(False)
 
 
