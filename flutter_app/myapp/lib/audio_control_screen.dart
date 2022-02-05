@@ -39,6 +39,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
   bool connected = true;
   bool enableBT = true;
   bool enableAUX = true;
+  bool enableEQ = true;
 
   @override
   initState() {
@@ -191,6 +192,30 @@ class _DeviceScreenState extends State<DeviceScreen> {
     return returnValue ?? Future.value(false);
   }
 
+  void loadEqualizerGainsFromDevice () async {
+    //Read values of Equalizer and Mixer gains
+    List<int> tempGain = await _services[2].characteristics[0].read();
+
+    //Converts casts values to int8
+    for (int i = 0; i<10 ;i++) {
+      int temp = tempGain[i].toSigned(8);
+      widget.gain[i] = temp.toDouble();
+    }
+    setState(() {});
+  }
+
+  void loadMixerGainsFromDevice () async {
+    //Read values of Equalizer and Mixer gains
+    List<int> tempGain = await _services[2].characteristics[1].read();
+
+    //Converts casts values to int8
+    for (int i = 0; i<2 ;i++) {
+      int temp = tempGain[i].toSigned(8);
+      widget.mixerGains[i] = temp.toDouble();
+    }
+    setState(() {});
+  }
+
   void disconnect() {
     try {
       setState(() {
@@ -250,6 +275,66 @@ class _DeviceScreenState extends State<DeviceScreen> {
               const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 5.0),
               const CustomDivider(text: 'Equalizer'),
               const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 25.0),
+              Row (
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Spacer(),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          primary: Colors.blue,
+                          padding: const EdgeInsets.fromLTRB(5, 0, 5, 0)
+                      ),
+                      child: const Text('Set Defaults'),
+                      onPressed: () {
+                        //Sets values to default
+                        for (int i = 0; i<10 ;i++) {
+                          widget.gain[i] = 0;
+                        }
+                        List<int> gainEqualizerInts = widget.gain.map((e) => e.toInt()).toList();
+                        _services[2].characteristics[0].write(gainEqualizerInts, withoutResponse: false);
+                        setState(() {});
+                      }
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          primary: Colors.blue,
+                          padding: const EdgeInsets.fromLTRB(5, 0, 5, 0)
+                      ),
+                      child: const Text('Load From Device') ,
+                      onPressed: () {
+                        loadEqualizerGainsFromDevice();
+                      }
+                  ),
+                  const Spacer(),
+                ],
+              ),
+              Row (
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        primary: enableEQ ? Colors.blue : Colors.transparent,
+                        padding: const EdgeInsets.fromLTRB(5, 0, 5, 0),
+                      ),
+
+                      child: enableEQ ? const Text('Disable Equalizer') : const Text('Enable Equalizer'),
+                      onPressed: () {
+                        setState(() {
+                          //TODO Implement EQ enable/disable
+                          if (enableEQ) {
+                            //statusBT[0] = 0;
+                            //_services[2].characteristics[4].write(statusBT);
+                          } else {
+                            //statusBT[0] = 1;
+                            //_services[2].characteristics[4].write(statusBT);
+                          }
+                          enableEQ = !enableEQ;
+                        });
+                      }
+                  ),
+                ],
+              ),
               SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
@@ -319,18 +404,45 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   const Spacer(),
                 ],
               ),
-
-              const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 25.0),
-              Row(
+              Row (
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  MixerSlider(index: 0, name: source, key: UniqueKey(),
-                      mixerGains: widget.mixerGains, service: _services),
-                  MixerSlider(index: 1, name: source, key: UniqueKey(),
-                      mixerGains: widget.mixerGains, service: _services),
+                  const Spacer(),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          primary: Colors.blue,
+                          padding: const EdgeInsets.fromLTRB(5, 0, 5, 0)
+                      ),
+                      child: const Text('Set Defaults'),
+                      onPressed: () {
+                        //Converts casts values to int8
+                        for (int i = 0; i<2 ;i++) {
+                          widget.mixerGains[i] = 0;
+                        }
+                        List<int> gainMixerInts = widget.gain.map((e) => e.toInt()).toList();
+                        _services[2].characteristics[1].write(gainMixerInts, withoutResponse: false);
+                        setState(() {});
+                      }
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          primary: Colors.blue,
+                          padding: const EdgeInsets.fromLTRB(5, 0, 5, 0)
+                      ),
+                      child: const Text('Load From Device') ,
+                      onPressed: () {
+                        loadMixerGainsFromDevice();
+                      }
+                  ),
+                  const Spacer(),
                 ],
               ),
-
+              const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 25.0),
+              MixerSlider(index: 0, name: source, key: UniqueKey(),
+                  mixerGains: widget.mixerGains, service: _services),
+              MixerSlider(index: 1, name: source, key: UniqueKey(),
+                  mixerGains: widget.mixerGains, service: _services),
             ],
           )
       ),
@@ -495,13 +607,13 @@ class _MixerSlider extends State<MixerSlider> {
   _setSliderValue() {
     setState(() {
       //BluetoothCharacteristic characteristic = widget.service[0].characteristics[0];
-      if (double.parse(myController.text).roundToDouble() < -20.0) {
-        widget.mixerGains[widget.index] = -20.0;
-        myController.text = '-20';
+      if (double.parse(myController.text).roundToDouble() < -40.0) {
+        widget.mixerGains[widget.index] = -40.0;
+        myController.text = '-40';
       }
-      else if (double.parse(myController.text).roundToDouble() > 10.0) {
-        widget.mixerGains[widget.index] = 10.0;
-        myController.text = '10';
+      else if (double.parse(myController.text).roundToDouble() > 20.0) {
+        widget.mixerGains[widget.index] = 20.0;
+        myController.text = '20';
       }
       else {
         widget.mixerGains[widget.index] = double.parse(myController.text).roundToDouble();
@@ -532,9 +644,8 @@ class _MixerSlider extends State<MixerSlider> {
         //Widget for the slider
         Slider(
           value: widget.mixerGains[widget.index],
-          max: 10,
-          min: -20,
-
+          max: 20,
+          min: -40,
           divisions: 30,
           onChanged: (double value) {
             setState(() {
