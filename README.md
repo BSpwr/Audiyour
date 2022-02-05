@@ -16,7 +16,7 @@ To flash the board, run the following command from within the embedded folder. R
 `idf.py -p /dev/ttyUSB0 fullclean flash monitor`
 
 ## Desktop App
-![](https://raw.githubusercontent.com/BSpwr/Audiyour/main/control_gui.png)
+![](https://raw.githubusercontent.com/BSpwr/Audiyour/main/desktop_control_gui.png)
 
 The Audiyour Control app for desktop is built on the Qt5 toolkit and is written in Python. This cross-platform app allows the user to set the equalizer and mixer gains, or disable them entirely. The Qt Python GUI source code is in the [gui_qt](https://github.com/BSpwr/Audiyour/tree/main/gui_qt) folder.
 
