@@ -21,7 +21,7 @@ To flash the board, run the following command from within the embedded folder. R
 The Audiyour Control app for desktop is built on the Qt5 toolkit and is written in Python. This cross-platform app allows the user to set the equalizer and mixer gains, or disable them entirely. The Qt Python GUI source code is in the [gui_qt](https://github.com/BSpwr/Audiyour/tree/main/gui_qt) folder.
 
 ### Prerequisites
-- You must have Qt5 Framework (GUI Toolkit) installed.
+- You must have the Qt5 Framework (GUI Toolkit) installed.
     - Ubuntu or Debian
         - sudo apt install qt5-default
     - Arch or Manjaro
@@ -41,6 +41,27 @@ The Audiyour Control app for desktop is built on the Qt5 toolkit and is written 
 Run `python3 main.py` from the gui_qt folder to launch the application.
 
 ## Mobile App
+![](https://raw.githubusercontent.com/BSpwr/Audiyour/main/mobile_control_gui.png)
 The Audiyour Control app for mobile is built using the Flutter SDK and is written in Dart. The Flutter GUI source code is in the [flutter_app](https://github.com/BSpwr/Audiyour/tree/main/flutter_app) folder.
 
-This interface is currently in active development but not yet complete.
+### Prerequisites
+- You must have Flutter installed, a cross-platform open-source framework by Google
+    - https://docs.flutter.dev/get-started/install
+
+- You must have Android Studio installed
+    - https://developer.android.com/studio
+
+- Once you are ready to run you need to install a dependency from the myapp directory as admin
+    - `flutter pub add flutter_blue`
+    - `flutter pub get`
+
+### Emulating the app
+Emulating the app allows you to interact with the interface only. Bluetooth is not available on virtual devices.
+- Create an Android Virtual Device in the AVD Manager in Android Studio. Any device in the list can be chosen.
+- Launch the Android Virtual Device on the emulator and run the app.
+
+### Running the app
+- Connect the Android device to Android Studio.
+- Enable developer options on the Android device.
+- Enable USB debugging on the Android device.
+- Run the app from Android Studio.
