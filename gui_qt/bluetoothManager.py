@@ -16,6 +16,7 @@ class BluetoothManager:
         self.MIXER_WIRELESS_ENABLE_CHARACTERISTIC = '0000ff04-0000-1000-8000-00805f9b34fb'
 
         self.eq_gains: list[float] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.eq_enable = False
         self.mix_gains = [0, 0]
         self.mac_address = None
 
