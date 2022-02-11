@@ -19,7 +19,7 @@
 #include "esp_avrc_api.h"
 #include "esp_peripherals.h"
 
-#include "mixer.h"
+#include "mixer2.h"
 #include "raw_stream.h"
 #include "equalizer.h"
 #include "es8388.h"
@@ -199,36 +199,36 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
 #define MUSIC_GAIN_DB 0
 #define PLAY_STATUS ESP_DOWNMIX_OUTPUT_TYPE_TWO_CHANNEL
 #define NUMBER_SOURCE_FILE 2
-    downmix_cfg_t mixer_cfg = DEFAULT_MIXER_CONFIG();
-    mixer_cfg.downmix_info.source_num = 2;
-    audiyour_pipeline->mixer = mixer_init(&mixer_cfg);
+    mixer2_cfg_t mixer_cfg = DEFAULT_MIXER2_CONFIG();
+    // mixer_cfg.downmix_info.source_num = 2;
+    audiyour_pipeline->mixer = mixer2_init(&mixer_cfg);
 
-    esp_downmix_input_info_t source_information[NUMBER_SOURCE_FILE] = {0};
-    esp_downmix_input_info_t source_info_base = {
-        .samplerate = SAMPLERATE,
-        .channel = NUM_INPUT_CHANNEL,
-        .bits_num = 16,
-        .gain = {0, 0},
-        .transit_time = TRANSMITTIME,
-    };
-    source_information[0] = source_info_base;
+    // esp_downmix_input_info_t source_information[NUMBER_SOURCE_FILE] = {0};
+    // esp_downmix_input_info_t source_info_base = {
+    //     .samplerate = SAMPLERATE,
+    //     .channel = NUM_INPUT_CHANNEL,
+    //     .bits_num = 16,
+    //     .gain = {0, 0},
+    //     .transit_time = TRANSMITTIME,
+    // };
+    // source_information[0] = source_info_base;
 
-    esp_downmix_input_info_t source_info_newcome = {
-        .samplerate = SAMPLERATE,
-        .channel = NUM_INPUT_CHANNEL,
-        .bits_num = 16,
-        .gain = {0, 0},
-        .transit_time = TRANSMITTIME,
-    };
-    source_information[1] = source_info_newcome;
-    source_info_init(audiyour_pipeline->mixer, source_information);
+    // esp_downmix_input_info_t source_info_newcome = {
+    //     .samplerate = SAMPLERATE,
+    //     .channel = NUM_INPUT_CHANNEL,
+    //     .bits_num = 16,
+    //     .gain = {0, 0},
+    //     .transit_time = TRANSMITTIME,
+    // };
+    // source_information[1] = source_info_newcome;
+    // source_info_init(audiyour_pipeline->mixer, source_information);
 
     ESP_LOGI(TAG, "[08] Connect raw streams to mixer");
     audiyour_pipeline->rb_jack_stream_raw = audio_element_get_input_ringbuf(audiyour_pipeline->jack_stream_raw);
-    mixer_set_input_rb(audiyour_pipeline->mixer, audiyour_pipeline->rb_jack_stream_raw, 0);
+    mixer2_set_input_rb(audiyour_pipeline->mixer, audiyour_pipeline->rb_jack_stream_raw, 0);
 
     audiyour_pipeline->rb_bt_stream_raw = audio_element_get_input_ringbuf(audiyour_pipeline->bt_stream_raw);
-    mixer_set_input_rb(audiyour_pipeline->mixer, audiyour_pipeline->rb_bt_stream_raw, 1);
+    mixer2_set_input_rb(audiyour_pipeline->mixer, audiyour_pipeline->rb_bt_stream_raw, 1);
 
     ESP_LOGI(TAG, "[09] Register all elements to audio pipeline");
     audio_pipeline_register(audiyour_pipeline->pipeline, audiyour_pipeline->mixer, "mixer");
@@ -272,10 +272,10 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
     audio_pipeline_set_listener(audiyour_pipeline->pipeline_bt_read, audiyour_pipeline->evt);
     audio_pipeline_set_listener(audiyour_pipeline->pipeline, audiyour_pipeline->evt);
     // audio_event_iface_set_listener(esp_periph_set_get_event_iface(audiyour_pipeline->periph_set), audiyour_pipeline->evt);
-    mixer_set_output_type(audiyour_pipeline->mixer, PLAY_STATUS);
-    mixer_set_input_rb_timeout(audiyour_pipeline->mixer, 50, INDEX_BASE_STREAM);
-    mixer_set_input_rb_timeout(audiyour_pipeline->mixer, 50, INDEX_NEWCOME_STREAM);
-    mixer_set_work_mode(audiyour_pipeline->mixer, ESP_DOWNMIX_WORK_MODE_SWITCH_ON);
+    // mixer_set_output_type(audiyour_pipeline->mixer, PLAY_STATUS);
+    // mixer_set_input_rb_timeout(audiyour_pipeline->mixer, 50, INDEX_BASE_STREAM);
+    // mixer_set_input_rb_timeout(audiyour_pipeline->mixer, 50, INDEX_NEWCOME_STREAM);
+    // mixer_set_work_mode(audiyour_pipeline->mixer, ESP_DOWNMIX_WORK_MODE_SWITCH_ON);
 
     ESP_LOGI(TAG, "[17] Start audio_pipeline");
     audio_pipeline_run(audiyour_pipeline->pipeline_jack_read);
