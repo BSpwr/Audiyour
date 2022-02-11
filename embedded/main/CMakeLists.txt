@@ -5,4 +5,5 @@ idf_component_register(SRCS "eq_iir_filter.c" "equalizer2.c" "main.cpp"
                             "globals.c"
                             "equalizer2.c"
                             "eq_iir_filter.c"
+                            "mixer2.c"
                     INCLUDE_DIRS ".")
