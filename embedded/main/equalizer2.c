@@ -1,17 +1,19 @@
+#include <string.h>
 #include "equalizer2.h"
 #include "esp_log.h"
-#include "globals.h"
+#include "util.h"
 #include "eq_iir_filter.h"
 #include "audio_mem.h"
 #include "math.h"
+#include "audio_error.h"
 
 static const char *TAG = "EQUALIZER";
 
 typedef struct equalizer_t {
     const dfi_iir_filter* iir_filter;
     dfi_iir_filter_buffer iir_buffer[EQ_NUM_BANDS * 2];
-    float equalizer_gain_ratios[EQ_NUM_BANDS];
-    bool enabled;
+    float gain_ratios[EQ_NUM_BANDS];
+    equalizer2_profile profile;
 } equalizer_t;
 
 static inline float directform_I_process(const dfi_iir_filter filter, dfi_iir_filter_buffer buffer, float sample) {
@@ -68,10 +70,7 @@ audio_element_handle_t equalizer2_init(equalizer2_cfg_t* config) {
 
     eq_data->iir_filter = config->iir_filter;
 
-    for (unsigned i = 0; i < EQ_NUM_BANDS; ++i) {
-        eq_data->equalizer_gain_ratios[i] = 1.0f;
-    }
-    eq_data->enabled = true;
+    equalizer2_set_profile(audio_element, config->profile);
 
     return audio_element;
 }
@@ -83,6 +82,7 @@ esp_err_t equalizer2_open(audio_element_handle_t self) {
 
 int equalizer2_process(audio_element_handle_t self, char *in_buffer, int in_len) {
     equalizer_t *eq_data = (equalizer_t *)audio_element_getdata(self);
+    ESP_LOGD(TAG, "equalizer2_process");
 
     int rsize = audio_element_input(self, in_buffer, in_len);
 
@@ -90,7 +90,7 @@ int equalizer2_process(audio_element_handle_t self, char *in_buffer, int in_len)
             ESP_LOGW(TAG, "unexpected rsize: %d, in_len: %d", rsize, in_len);
         }
 
-    if (eq_data->enabled) {
+    if (eq_data->profile.enabled) {
         int16_t left_sample, right_sample;
         float left_sample_f, right_sample_f;
 
@@ -113,8 +113,8 @@ int equalizer2_process(audio_element_handle_t self, char *in_buffer, int in_len)
             output_right_sample_f = 0;
 
             for (unsigned j = 0; j < 10; ++j) {
-                output_left_sample_f += directform_I_process(eq_data->iir_filter[j], eq_data->iir_buffer[j * 2], left_sample_f) * eq_data->equalizer_gain_ratios[j];
-                output_right_sample_f += directform_I_process(eq_data->iir_filter[j], eq_data->iir_buffer[j * 2 + 1], right_sample_f) * eq_data->equalizer_gain_ratios[j];
+                output_left_sample_f += directform_I_process(eq_data->iir_filter[j], eq_data->iir_buffer[j * 2], left_sample_f) * eq_data->gain_ratios[j];
+                output_right_sample_f += directform_I_process(eq_data->iir_filter[j], eq_data->iir_buffer[j * 2 + 1], right_sample_f) * eq_data->gain_ratios[j];
             }
 
             left_sample = float_to_i16(output_left_sample_f);
@@ -133,16 +133,30 @@ int equalizer2_process(audio_element_handle_t self, char *in_buffer, int in_len)
     return rsize;
 }
 
+inline esp_err_t equalizer2_set_profile(audio_element_handle_t self, equalizer2_profile profile) {
+    equalizer_t *eq_data = (equalizer_t *)audio_element_getdata(self);
+    eq_data->profile = profile;
+    // convert dB to ratio and store the ratio
+    for (unsigned i = 0; i < EQ_NUM_BANDS; ++i) {
+        eq_data->gain_ratios[i] = gain_to_ratio(eq_data->profile.gains[i]);
+        ESP_LOGI(TAG, "set band ratio[%d] = %f", i, eq_data->gain_ratios[i]);
+    }
+
+    return ESP_OK;
+}
+
 inline esp_err_t equalizer2_set_gain(audio_element_handle_t self, unsigned band_idx, float gain_db) {
     equalizer_t *eq_data = (equalizer_t *)audio_element_getdata(self);
-    eq_data->equalizer_gain_ratios[band_idx] = gain_to_ratio(gain_db);
-    ESP_LOGI(TAG, "set band ratio[%d] = %f", band_idx, eq_data->equalizer_gain_ratios[band_idx]);
+    eq_data->profile.gains[band_idx] = gain_db;
+    // convert dB to ratio and store the ratio
+    eq_data->gain_ratios[band_idx] = gain_to_ratio(eq_data->profile.gains[band_idx]);
+    ESP_LOGI(TAG, "set band ratio[%d] = %f", band_idx, eq_data->gain_ratios[band_idx]);
     return ESP_OK;
 }
 
 esp_err_t equalizer2_set_enable(audio_element_handle_t self, bool enabled) {
     equalizer_t *eq_data = (equalizer_t *)audio_element_getdata(self);
-    eq_data->enabled = enabled;
+    eq_data->profile.enabled = enabled;
     ESP_LOGI(TAG, "set enable");
     return ESP_OK;
 }

@@ -24,29 +24,54 @@
 #include "equalizer.h"
 #include "es8388.h"
 
-#include "globals.h"
+#include "util.h"
 #include "pipeline.h"
 #include "equalizer2.h"
 
 static const char *TAG = "PIPELINE";
 
-void update_equalizer_gains(audiyour_pipeline_a2dp* audiyour_pipeline, float equalizer_gains[10]) {
+audiyour_pipeline_a2dp g_audiyour_pipeline;
+
+void pipeline_update_equalizer_gains(audiyour_pipeline_a2dp* audiyour_pipeline, float equalizer_gains[10]) {
     ESP_LOGI(TAG, "Update_equalizer_gains");
     if (audiyour_pipeline && audiyour_pipeline->mycomp) {
-        ESP_LOGI(TAG, "Actually update_equalizer_gains");
         for (int i = 0; i < 10; i++) {
             equalizer2_set_gain(audiyour_pipeline->mycomp, i, equalizer_gains[i]);
         }
     }
 
-    // TODO: legacy
-    if (audiyour_pipeline && audiyour_pipeline->equalizer) {
-        ESP_LOGI(TAG, "Actually update_equalizer_gains");
-        for (int i = 0; i < 10; i++) {
-            equalizer_set_gain_info(audiyour_pipeline->equalizer, i, (int)(equalizer_gains[i]), true);
-        }
+    // // TODO: legacy
+    // if (audiyour_pipeline && audiyour_pipeline->equalizer) {
+    //     ESP_LOGI(TAG, "Actually update_equalizer_gains");
+    //     for (int i = 0; i < 10; i++) {
+    //         equalizer_set_gain_info(audiyour_pipeline->equalizer, i, (int)(equalizer_gains[i]), true);
+    //     }
+    // }
+}
+
+void pipeline_update_equalizer_enable(audiyour_pipeline_a2dp* audiyour_pipeline, bool enabled) {
+    ESP_LOGI(TAG, "Update_equalizer_enable");
+    if (audiyour_pipeline && audiyour_pipeline->mycomp) {
+        equalizer2_set_enable(audiyour_pipeline->mycomp, enabled);
     }
 }
+
+void pipeline_update_mixer_gain(audiyour_pipeline_a2dp* audiyour_pipeline, unsigned source_idx, float gain_db) {
+    ESP_LOGI(TAG, "Update_mixer_gain");
+    if (audiyour_pipeline && audiyour_pipeline->mixer) {
+        mixer2_set_gain(audiyour_pipeline->mixer, source_idx, gain_db);
+    }
+}
+
+void pipeline_update_mixer_enable(audiyour_pipeline_a2dp* audiyour_pipeline, unsigned source_idx, bool enabled) {
+    ESP_LOGI(TAG, "Update_mixer_enable");
+    if (audiyour_pipeline && audiyour_pipeline->mixer) {
+        mixer2_set_enable(audiyour_pipeline->mixer, source_idx, enabled);
+    }
+}
+
+
+
 
 static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
 {
@@ -153,15 +178,15 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
     i2s_writer_cfg.type = AUDIO_STREAM_WRITER;
     audiyour_pipeline->i2s_stream_writer = i2s_stream_init(&i2s_writer_cfg);
 
-    equalizer_cfg_t eq_cfg = DEFAULT_EQUALIZER_CONFIG();
+    // equalizer_cfg_t eq_cfg = DEFAULT_EQUALIZER_CONFIG();
 
-    int set_gain[20];
-    for (unsigned int i = 0; i < 10; i++) {
-        set_gain[i * 2] = (int)((int8_t)g_equalizer_gains[i]);
-        set_gain[i * 2 + 1] = (int)((int8_t)g_equalizer_gains[i]);
-    }
-    eq_cfg.set_gain =
-        set_gain; // The size of gain array should be the multiplication of NUMBER_BAND and number channels of audio stream data. The minimum of gain is -13 dB.
+    // int set_gain[20];
+    // for (unsigned int i = 0; i < 10; i++) {
+    //     set_gain[i * 2] = (int)((int8_t)g_equalizer_gains[i]);
+    //     set_gain[i * 2 + 1] = (int)((int8_t)g_equalizer_gains[i]);
+    // }
+    // eq_cfg.set_gain =
+        // set_gain; // The size of gain array should be the multiplication of NUMBER_BAND and number channels of audio stream data. The minimum of gain is -13 dB.
     // audiyour_pipeline->equalizer = equalizer_init(&eq_cfg);
 
     ESP_LOGI(TAG, "[05] Get Bluetooth stream");
@@ -200,7 +225,6 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
 #define PLAY_STATUS ESP_DOWNMIX_OUTPUT_TYPE_TWO_CHANNEL
 #define NUMBER_SOURCE_FILE 2
     mixer2_cfg_t mixer_cfg = DEFAULT_MIXER2_CONFIG();
-    // mixer_cfg.downmix_info.source_num = 2;
     audiyour_pipeline->mixer = mixer2_init(&mixer_cfg);
 
     // esp_downmix_input_info_t source_information[NUMBER_SOURCE_FILE] = {0};
@@ -276,7 +300,9 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
     // mixer_set_input_rb_timeout(audiyour_pipeline->mixer, 50, INDEX_BASE_STREAM);
     // mixer_set_input_rb_timeout(audiyour_pipeline->mixer, 50, INDEX_NEWCOME_STREAM);
     // mixer_set_work_mode(audiyour_pipeline->mixer, ESP_DOWNMIX_WORK_MODE_SWITCH_ON);
+}
 
+void audiyour_pipeline_a2dp_run(audiyour_pipeline_a2dp* audiyour_pipeline) {
     ESP_LOGI(TAG, "[17] Start audio_pipeline");
     audio_pipeline_run(audiyour_pipeline->pipeline_jack_read);
     audio_pipeline_run(audiyour_pipeline->pipeline_bt_read);
@@ -299,7 +325,6 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
         ESP_LOGI(TAG, "Pipeline event handler task started successfully");
         /* The task was created.  Use the task's handle to delete the task. */
     }
-
 }
 
 void audiyour_pipeline_a2dp_deinit(audiyour_pipeline_a2dp* audiyour_pipeline) {

@@ -16,3 +16,5 @@ idf_build_set_property(COMPILE_OPTIONS "-Wno-error=maybe-uninitialized" APPEND)
 idf_build_set_property(COMPILE_OPTIONS "-Wno-maybe-uninitialized" APPEND)
 idf_build_set_property(COMPILE_OPTIONS "-Wno-unused-function" APPEND)
 idf_build_set_property(COMPILE_OPTIONS "-fpermissive" APPEND)
+
+littlefs_create_partition_image(littlefs main)

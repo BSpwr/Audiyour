@@ -1,9 +1,15 @@
 #ifndef EQUALIZER_H_
 #define EQUALIZER_H_
 
+#include <stdbool.h>
 #include "esp_err.h"
 #include "audio_element.h"
 #include "eq_iir_filter.h"
+
+typedef struct equalizer2_profile {
+    float gains[EQ_NUM_BANDS];
+    bool enabled;
+} equalizer2_profile;
 
 typedef struct {
     int max_sample;                  /*!< The number of samples per call to process */
@@ -12,6 +18,7 @@ typedef struct {
     int task_core;                   /*!< Task running in core... */
     int task_prio;                   /*!< Task priority (based on the FreeRTOS priority) */
     bool stack_in_ext;               /*!< Try to allocate stack in external memory */
+    equalizer2_profile profile;
     const dfi_iir_filter* iir_filter;
 } equalizer2_cfg_t;
 
@@ -29,6 +36,10 @@ typedef struct {
         .task_core = EQUALIZER2_TASK_CORE,                               \
         .task_prio = EQUALIZER2_TASK_PRIO,                               \
         .stack_in_ext = true,                                         \
+        .profile = {                                                    \
+            .gains = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, \
+            .enabled = false, \
+        }, \
         .iir_filter = g_equalizer_filters,                              \
     }
 
@@ -39,6 +50,7 @@ esp_err_t equalizer2_close(audio_element_handle_t self);
 esp_err_t equalizer2_destroy(audio_element_handle_t self);
 
 esp_err_t equalizer2_set_gain(audio_element_handle_t self, unsigned band_idx, float gain_db);
+esp_err_t equalizer2_set_profile(audio_element_handle_t self, equalizer2_profile profile);
 esp_err_t equalizer2_set_enable(audio_element_handle_t self, bool enabled);
 
 #endif // EQUALIZER_H_

@@ -42,13 +42,12 @@
 #include "a2dp_stream.h"
 #include "driver/uart.h"
 
-#include "mixer.h"
 #include "raw_stream.h"
 #include "equalizer.h"
 #include "es8388.h"
 
 #include "pipeline.h"
-#include "globals.h"
+#include "profile.h"
 
 #define UART_MONITOR_BAUDRATE (115200)
 
@@ -113,9 +112,11 @@ void bt_deinit(void) {
 
 // --------------------------------------------------------------
 
-extern "C" {
-    void app_main(void);
-}
+// extern "C" {
+//     void app_main(void);
+// }
+
+const char* TAG = "LITTLE_FS";
 
 void app_main(void)
 {
@@ -136,16 +137,28 @@ void app_main(void)
     };
     uart_param_config(UART_NUM_0, &uart_config);
 
+    fs_init();
+    // fs_profiles_init(MAX_NUM_PROFILES);
+    fs_get_profiles(g_profiles, &g_current_profile, MAX_NUM_PROFILES);
+
     bt_init();
     audiyour_pipeline_a2dp_init(&g_audiyour_pipeline);
+    apply_active_profile();
+    audiyour_pipeline_a2dp_run(&g_audiyour_pipeline);
     ble_gatts_init();
 
+    profile_writeback_task_create();
+
     while(1) {
-        vTaskDelay(10);
+        vTaskDelay(1000);
     }
+
+    profile_writeback_task_delete();
 
     ble_gatts_deinit();
     audiyour_pipeline_a2dp_deinit(&g_audiyour_pipeline);
     bt_deinit();
+
+    fs_deinit();
 
 }

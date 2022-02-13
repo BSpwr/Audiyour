@@ -1,7 +1,7 @@
 #include "gatt.h"
 #include "esp_log.h"
 #include <string.h>
-#include "globals.h"
+#include "profile.h"
 #include "equalizer2.h"
 
 #define PROFILE_NUM                 1
@@ -115,6 +115,15 @@ static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
 static const uint8_t char_prop_read_write   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ;
 // static const uint8_t heart_measurement_ccc[2]      = {0x00, 0x00};
 
+static float temp_equalizer_gains[10]    = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+static bool temp_equalizer_enable = true;
+
+static bool temp_mixer_enable_line_in = true;
+static bool temp_mixer_enable_bluetooth_a2dp_in = true;
+// temp_source_gains[0] is 3.5mm jack, temp_source_gains[1] is bluetooth a2dp
+static float temp_source_gains[2]        = {0x0, 0x0};
+static int8_t temp_output_gain         = 0x0;
+
 /* Full Database Description - Used to add attributes into the database */
 static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
 {
@@ -130,7 +139,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_EQ_GAINS_VAL] =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_EQ_GAINS_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(g_equalizer_gains), (uint8_t *)g_equalizer_gains}},
+      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_equalizer_gains), (uint8_t *)temp_equalizer_gains}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_EQ_ENABLE]     =
@@ -139,7 +148,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_EQ_ENABLE_VAL] =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_EQ_ENABLE_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(g_equalizer_enable), (uint8_t *)&g_equalizer_enable}},
+      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_equalizer_enable), (uint8_t *)&temp_equalizer_enable}},
 
     /* Client Characteristic Configuration Descriptor */
     // [IDX_CHAR_CFG_A]  =
@@ -153,7 +162,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_MIXER_INPUT_GAINS_VAL]  =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_MIXER_INPUT_GAINS_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(g_source_gains), (uint8_t *)g_source_gains}},
+      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_source_gains), (uint8_t *)temp_source_gains}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_MIXER_ENABLE_JACK_IN]      =
@@ -162,7 +171,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_MIXER_ENABLE_JACK_IN_VAL]  =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_MIXER_ENABLE_JACK_IN_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(g_mixer_enable_line_in), (uint8_t *)&g_mixer_enable_line_in}},
+      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_mixer_enable_line_in), (uint8_t *)&temp_mixer_enable_line_in}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN]      =
@@ -171,7 +180,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN_VAL]  =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(g_mixer_enable_bluetooth_a2dp_in), (uint8_t *)&g_mixer_enable_bluetooth_a2dp_in}},
+      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_mixer_enable_bluetooth_a2dp_in), (uint8_t *)&temp_mixer_enable_bluetooth_a2dp_in}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_OUTPUT_GAIN]      =
@@ -180,7 +189,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_OUTPUT_GAIN_VAL]  =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_OUTPUT_GAIN_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(g_output_gain), (uint8_t *)&g_output_gain}},
+      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_output_gain), (uint8_t *)&temp_output_gain}},
 
 };
 
@@ -336,9 +345,9 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     esp_gatt_rsp_t rsp;
                     memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
                     rsp.attr_value.handle = param->read.handle;
-                    rsp.attr_value.len = sizeof(g_equalizer_gains);
+                    rsp.attr_value.len = sizeof(g_profiles[g_current_profile]->equalizer.gains);
 
-                    memcpy(rsp.attr_value.value, g_equalizer_gains, sizeof(g_equalizer_gains));
+                    memcpy(rsp.attr_value.value, g_profiles[g_current_profile]->equalizer.gains, sizeof(g_profiles[g_current_profile]->equalizer.gains));
                     esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
                             ESP_GATT_OK, &rsp);
             } else if (gatt_handle_table[IDX_CHAR_EQ_ENABLE_VAL] == param->read.handle) {
@@ -347,7 +356,7 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     rsp.attr_value.handle = param->read.handle;
                     rsp.attr_value.len = 1;
 
-                    memcpy(rsp.attr_value.value, &g_equalizer_enable, 1);
+                    memcpy(rsp.attr_value.value, &g_profiles[g_current_profile]->equalizer.enabled, 1);
                     esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
                             ESP_GATT_OK, &rsp);
 
@@ -355,9 +364,9 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                                     esp_gatt_rsp_t rsp;
                     memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
                     rsp.attr_value.handle = param->read.handle;
-                    rsp.attr_value.len = 2;
+                    rsp.attr_value.len = g_profiles[g_current_profile]->mixer.num_sources * sizeof(float);
 
-                    memcpy(rsp.attr_value.value, g_source_gains, 2);
+                    memcpy(rsp.attr_value.value, g_profiles[g_current_profile]->mixer.settings.gains, g_profiles[g_current_profile]->mixer.num_sources * sizeof(float));
                     esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
                             ESP_GATT_OK, &rsp);
 
@@ -367,7 +376,7 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     rsp.attr_value.handle = param->read.handle;
                     rsp.attr_value.len = 1;
 
-                    memcpy(rsp.attr_value.value, &g_mixer_enable_line_in, 1);
+                    memcpy(rsp.attr_value.value, &g_profiles[g_current_profile]->mixer.settings.enabled[0], 1);
                     esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
                             ESP_GATT_OK, &rsp);
 
@@ -377,7 +386,7 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     rsp.attr_value.handle = param->read.handle;
                     rsp.attr_value.len = 1;
 
-                    memcpy(rsp.attr_value.value, &g_mixer_enable_bluetooth_a2dp_in, 1);
+                    memcpy(rsp.attr_value.value, &g_profiles[g_current_profile]->mixer.settings.enabled[1], 1);
                     esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
                             ESP_GATT_OK, &rsp);
 
@@ -387,7 +396,7 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     rsp.attr_value.handle = param->read.handle;
                     rsp.attr_value.len = 1;
 
-                    memcpy(rsp.attr_value.value, &g_output_gain, 1);
+                    memcpy(rsp.attr_value.value, &temp_output_gain, 1);
                     esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
                             ESP_GATT_OK, &rsp);
             }
@@ -402,19 +411,19 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                 // TODO: refactor
 
                 if (gatt_handle_table[IDX_CHAR_EQ_GAINS_VAL] == param->write.handle) {
-                    bool data_valid = param->write.len == sizeof(g_equalizer_gains);
+                    bool data_valid = param->write.len == sizeof(g_profiles[g_current_profile]->equalizer.gains);
 
                     // TODO: whatever...
-                    // for (int i = 0; i < sizeof(g_equalizer_gains)/sizeof(float); i++) {
+                    // for (int i = 0; i < sizeof(temp_equalizer_gains)/sizeof(float); i++) {
                     //     if ((int8_t)param->write.value[i] < MIN_EQ_GAIN || (int8_t)param->write.value[i] > MAX_EQ_GAIN) {
                     //         data_valid = false;
                     //     }
                     // }
 
                     if (data_valid) {
-                        memcpy(g_equalizer_gains, param->write.value, param->write.len);
+                        memcpy(temp_equalizer_gains, param->write.value, param->write.len);
 
-                        update_equalizer_gains(&g_audiyour_pipeline, g_equalizer_gains);
+                        profile_update_equalizer_gains(temp_equalizer_gains);
                     }
 
                     /* send response when param->write.need_rsp is true*/
@@ -428,11 +437,9 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     bool data_valid = param->write.len == 1;
 
                     if (data_valid) {
-                        g_equalizer_enable = *param->write.value;
+                        temp_equalizer_enable = *param->write.value;
 
-                        if (g_audiyour_pipeline.mycomp) {
-                            equalizer2_set_enable(g_audiyour_pipeline.mycomp, g_equalizer_enable);
-                        }
+                        profile_update_equalizer_enable(temp_equalizer_enable);
                     }
 
                     /* send response when param->write.need_rsp is true*/
@@ -444,12 +451,13 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     }
                 } 
                 else if (gatt_handle_table[IDX_CHAR_MIXER_INPUT_GAINS_VAL] == param->write.handle) {
-                    bool data_valid = param->write.len == 2;
+                    bool data_valid = param->write.len == sizeof(temp_source_gains);
 
                     if (data_valid) {
-                        memcpy(g_source_gains, param->write.value, param->write.len);
+                        memcpy(temp_source_gains, param->write.value, param->write.len);
 
-                        update_g_source_gain_ratios();
+                        profile_update_mixer_gain(0, temp_source_gains[0]);
+                        profile_update_mixer_gain(1, temp_source_gains[1]);
                     }
 
                     /* send response when param->write.need_rsp is true*/
@@ -463,7 +471,9 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     bool data_valid = param->write.len == 1;
 
                     if (data_valid) {
-                        g_mixer_enable_line_in = *param->write.value;
+                        temp_mixer_enable_line_in = *param->write.value;
+
+                        profile_update_mixer_enable(0, temp_mixer_enable_line_in);
                     }
 
                     /* send response when param->write.need_rsp is true*/
@@ -477,7 +487,9 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     bool data_valid = param->write.len == 1;
 
                     if (data_valid) {
-                        g_mixer_enable_bluetooth_a2dp_in = *param->write.value;
+                        temp_mixer_enable_bluetooth_a2dp_in = *param->write.value;
+
+                        profile_update_mixer_enable(1, temp_mixer_enable_bluetooth_a2dp_in);
                     }
 
                     /* send response when param->write.need_rsp is true*/
@@ -491,7 +503,7 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     bool data_valid = param->write.len == 1;
 
                     if (data_valid) {
-                        memcpy(&g_output_gain, param->write.value, param->write.len);
+                        memcpy(&temp_output_gain, param->write.value, param->write.len);
                     }
 
                     /* send response when param->write.need_rsp is true*/

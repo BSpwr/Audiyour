@@ -1,7 +1,7 @@
 #include <string.h>
 #include "mixer2.h"
 #include "esp_log.h"
-#include "globals.h"
+#include "util.h"
 #include "eq_iir_filter.h"
 #include "audio_mem.h"
 #include "math.h"
@@ -86,8 +86,6 @@ esp_err_t mixer2_open(audio_element_handle_t self) {
         return ESP_ERR_NO_MEM;
     }
 
-    audio_element_reset_state(self);
-
     ESP_LOGI(TAG, "open");
     return ESP_OK;
 }
@@ -169,6 +167,23 @@ inline esp_err_t mixer2_set_settings(audio_element_handle_t self, mixer2_setting
 
     return ESP_OK;
 }
+
+// inline esp_err_t mixer2_set_settings2(audio_element_handle_t self, mixer2_settings_2 settings) {
+//     mixer_t *mixer = (mixer_t *)audio_element_getdata(self);
+
+//     assert(mixer->profile.num_sources == 2);
+
+//     memcpy(mixer->profile.settings.gains, settings.gains, mixer->profile.num_sources * sizeof(float));
+//     memcpy(mixer->profile.settings.enabled, settings.enabled, mixer->profile.num_sources * sizeof(bool));
+
+//     // convert dB to ratio and store the ratio
+//     for (unsigned i = 0; i < mixer->profile.num_sources; ++i) {
+//         mixer->gain_ratios[i] = gain_to_ratio(mixer->profile.settings.gains[i]);
+//         ESP_LOGI(TAG, "set source ratio[%d] = %f", i, mixer->gain_ratios[i]);
+//     }
+
+//     return ESP_OK;
+// }
 
 inline esp_err_t mixer2_set_gain(audio_element_handle_t self, unsigned source_idx, float gain_db) {
     mixer_t *mixer = (mixer_t *)audio_element_getdata(self);

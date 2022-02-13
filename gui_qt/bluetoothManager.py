@@ -17,7 +17,7 @@ class BluetoothManager:
 
         self.eq_gains: list[float] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.eq_enable = False
-        self.mix_gains = [0, 0]
+        self.mix_gains: list[float] = [0, 0]
         self.mac_address = None
 
         self.client = None
@@ -88,7 +88,7 @@ class BluetoothManager:
 
         value = await self.client.read_gatt_char(self.MIXER_GAINS_CHARACTERISTIC)
         for i in range(0, 2):
-            self.mix_gains[i] = int.from_bytes([value[i]], "little", signed=True)
+            self.mix_gains[i] = struct.unpack('<f', value[i*4:i*4+4])[0]
 
 
     async def read_mix_line_in_en(self):
@@ -181,7 +181,7 @@ class BluetoothManager:
 
         new_gains_bytes = b''
         for i in new_gains:
-            new_gains_bytes = new_gains_bytes + i.to_bytes(1, "little", signed=True)
+            new_gains_bytes = new_gains_bytes + bytearray(struct.pack("<f", i))
 
         self.mix_gains = new_gains
 

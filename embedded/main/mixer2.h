@@ -10,10 +10,21 @@ typedef struct mixer2_settings {
     bool *enabled;
 } mixer2_settings;
 
+// Would use templates, but this is C, not C++
+// typedef struct mixer2_settings_2 {
+//     float gains[2];
+//     bool enabled[2];
+// } mixer2_settings_2;
+
 typedef struct mixer2_profile {
     size_t num_sources;
     mixer2_settings settings;
 } mixer2_profile;
+
+// typedef struct mixer2_profile_2 {
+//     size_t num_sources;
+//     mixer2_settings_2 settings;
+// } mixer2_profile_2;
 
 typedef struct {
     int max_sample;                  /*!< The number of samples per call to process */
@@ -61,6 +72,7 @@ esp_err_t mixer2_destroy(audio_element_handle_t self);
 
 esp_err_t mixer2_set_gain(audio_element_handle_t self, unsigned source_idx, float gain_db);
 esp_err_t mixer2_set_settings(audio_element_handle_t self, mixer2_settings profile);
+// esp_err_t mixer2_set_settings2(audio_element_handle_t self, mixer2_settings_2 profile);
 esp_err_t mixer2_set_enable(audio_element_handle_t self, unsigned source_idx, bool enabled);
 
 void mixer2_set_input_rb(audio_element_handle_t self, ringbuf_handle_t rb, int index);
