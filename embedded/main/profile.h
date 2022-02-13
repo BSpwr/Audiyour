@@ -4,7 +4,7 @@
 #include "esp_littlefs.h"
 
 #include "equalizer2.h"
-#include "mixer2.h"
+#include "mixer.h"
 
 #define MAX_NUM_PROFILES 5
 #define MAX_PROFILE_NAME_LEN 32
@@ -12,7 +12,7 @@
 typedef struct profile {
     char name[MAX_PROFILE_NAME_LEN];
     equalizer2_profile equalizer;
-    mixer2_profile mixer;
+    mixer_profile mixer;
 } profile;
 
 extern size_t g_current_profile;
@@ -26,7 +26,7 @@ extern profile* g_profiles[MAX_NUM_PROFILES];
             .enabled = false, \
         },\
         .mixer = {\
-            .num_sources = MIXER2_NUM_SOURCES,\
+            .num_sources = mixer_NUM_SOURCES,\
             .settings = {\
                 .gains = default_gains2,\
                 .enabled = default_enabled2,\

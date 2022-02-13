@@ -51,7 +51,6 @@ typedef struct audiyour_pipeline_a2dp {
     esp_periph_handle_t bt_periph;
     audio_event_iface_handle_t evt;
     TaskHandle_t event_listener_task;
-    audio_element_handle_t mycomp;
 } audiyour_pipeline_a2dp;
 
 extern audiyour_pipeline_a2dp g_audiyour_pipeline;
