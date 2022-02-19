@@ -109,13 +109,17 @@ class _MyHomePageState extends State<MyHomePage> {
 
   //Lists BLE connections with Name, MAC address, and signals
   Widget listItem(ScanResult r) {
-    return ListTile(
-      onTap: () => onTap(r),
-      leading: leading(r),
-      title: deviceName(r),
-      subtitle: deviceMacAddress(r),
-      trailing: deviceSignal(r),
-    );
+    if (deviceName(r) == const Text('Audiyour'))
+    {
+      return ListTile(
+        onTap: () => onTap(r),
+        leading: leading(r),
+        title: deviceName(r),
+        subtitle: deviceMacAddress(r),
+        trailing: deviceSignal(r),
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   @override
@@ -129,7 +133,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: ListView.separated(
           itemCount: scanResultList.length,
           itemBuilder: (context, index) {
-            return listItem(scanResultList[index]);
+              return listItem(scanResultList[index]);
           },
           separatorBuilder: (context, index) {
             return const Divider();

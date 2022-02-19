@@ -250,6 +250,15 @@ class _DeviceScreenState extends State<DeviceScreen> {
               const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 5.0),
               const CustomDivider(text: 'Equalizer'),
               const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 25.0),
+              DropdownButton<String>(
+                items: <String>['Custom Profile 1', 'Custom Profile 2', 'Custom Profile 3', 'Custom Profile 4', 'Custom Profile 5', 'Custom Profile 6', 'Custom Profile 7', 'Custom Profile 8'].map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (_) {},
+              ),
               SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
