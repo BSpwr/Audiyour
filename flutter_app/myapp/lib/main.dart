@@ -36,6 +36,7 @@ class _MyHomePageState extends State<MyHomePage> {
   FlutterBlue flutterBlue = FlutterBlue.instance;
   //List that holds BLE options
   List<ScanResult> scanResultList = [];
+  List<ScanResult> audiyourDevices = [];
   //If scanning
   bool _isScanning = false;
 
@@ -51,6 +52,19 @@ class _MyHomePageState extends State<MyHomePage> {
       _isScanning = isScanning;
       setState(() {});
     });
+  }
+
+  int findAudiyour()
+  {
+    audiyourDevices.clear();
+    for (var i = 0; i < scanResultList.length; ++i)
+    {
+      if (scanResultList[i].device.name == "Audiyour")
+      {
+        audiyourDevices.add(scanResultList[i]);
+      }
+    }
+    return audiyourDevices.length;
   }
 
   scan() async {
@@ -109,8 +123,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   //Lists BLE connections with Name, MAC address, and signals
   Widget listItem(ScanResult r) {
-    if (deviceName(r) == const Text('Audiyour'))
-    {
       return ListTile(
         onTap: () => onTap(r),
         leading: leading(r),
@@ -118,8 +130,6 @@ class _MyHomePageState extends State<MyHomePage> {
         subtitle: deviceMacAddress(r),
         trailing: deviceSignal(r),
       );
-    }
-    return const SizedBox.shrink();
   }
 
   @override
@@ -131,9 +141,9 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Center(
         //Creates a list for each entry
         child: ListView.separated(
-          itemCount: scanResultList.length,
+          itemCount: findAudiyour(),
           itemBuilder: (context, index) {
-              return listItem(scanResultList[index]);
+              return listItem(audiyourDevices[index]);
           },
           separatorBuilder: (context, index) {
             return const Divider();
