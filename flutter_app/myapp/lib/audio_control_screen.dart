@@ -170,15 +170,15 @@ class _DeviceScreenState extends State<DeviceScreen> {
     _services = await widget.device.discoverServices();
 
     //Read values of Equalizer and Mixer gains
-    List<int> tempGain = await _services[2].characteristics[0].read();
-    List<int> tempMixerGains = await _services[2].characteristics[1].read();
+    List<double> tempGain = await _services[2].characteristics[0].read();
+    List<double> tempMixerGains = await _services[2].characteristics[1].read();
 
     //Converts casts values to int8
     for (int i = 0; i<10 ;i++) {
-      int temp = tempGain[i].toSigned(8);
+      double temp = tempGain[i];
       widget.gain[i] = temp.toDouble();
       if (i < 2) {
-        int temp1 = tempMixerGains[i].toSigned(8);
+        double temp1 = tempMixerGains[i];
         widget.mixerGains[i] = temp1.toDouble();
       }
     }
@@ -197,11 +197,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
         stateText = 'Disconnecting';
       });
 
-      //Sends currect gain values from mixer and equalizer to device one last time
-      List<int> gainEqualizerInts = widget.gain.map((e) => e.toInt()).toList();
-      List<int> gainMixerInts = widget.gain.map((e) => e.toInt()).toList();
-      _services[2].characteristics[0].write(gainEqualizerInts, withoutResponse: false);
-      _services[2].characteristics[1].write(gainMixerInts, withoutResponse: false);
+      //Sends currect gain values from mixer and equalizer to device one last time WORKING ON DOUBLE
+      List<double> gainEqualizer = widget.gain.map((e) => e).toList();
+      List<double> gainMixer = widget.gain.map((e) => e).toList();
+      _services[2].characteristics[0].write(gainEqualizer, withoutResponse: false);
+      _services[2].characteristics[1].write(gainMixer, withoutResponse: false);
       widget.device.disconnect();
       print('###################### Disconnected ####################################');
     } catch (e) {
@@ -372,7 +372,7 @@ class _EqualizerSlider extends State<EqualizerSlider> {
 
   final myController = TextEditingController();
 
-  List<int> gainInts = [];
+  List<double> gainInts = [];
 
   @override
   void initState() {
@@ -398,7 +398,7 @@ class _EqualizerSlider extends State<EqualizerSlider> {
         widget.gain[widget.index] = double.parse(myController.text).roundToDouble();
       }
       //Converts List double to List int
-      gainInts = widget.gain.map((e) => e.toInt()).toList();
+      gainInts = widget.gain.map((e) => e).toList();
 
       //If services and gains are not empty
       if(gainInts.isNotEmpty && widget.service.isNotEmpty) {
@@ -490,7 +490,7 @@ class _MixerSlider extends State<MixerSlider> {
 
   final myController = TextEditingController();
 
-  List<int> mixerGainsInt = [];
+  List<double> mixerGains = [];
 
   @override
   void initState() {
@@ -517,11 +517,11 @@ class _MixerSlider extends State<MixerSlider> {
       }
 
       //Converts List double to List int
-      mixerGainsInt = widget.mixerGains.map((e) => e.toInt()).toList();
+      mixerGains = widget.mixerGains.map((e) => e).toList();
 
       //If services and gains are not empty
-      if(mixerGainsInt.isNotEmpty && widget.service.isNotEmpty) {
-        widget.service[2].characteristics[1].write(mixerGainsInt);
+      if(mixerGains.isNotEmpty && widget.service.isNotEmpty) {
+        widget.service[2].characteristics[1].write(mixerGains);
       }
     });
   }
