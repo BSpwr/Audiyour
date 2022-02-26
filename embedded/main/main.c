@@ -139,7 +139,7 @@ void app_main(void)
 
     fs_init();
     // fs_profiles_init(MAX_NUM_PROFILES);
-    fs_get_profiles(g_profiles, &g_current_profile, MAX_NUM_PROFILES);
+    fs_load_profiles(g_profiles, &g_profile_idx, MAX_NUM_PROFILES);
 
     bt_init();
     audiyour_pipeline_a2dp_init(&g_audiyour_pipeline);

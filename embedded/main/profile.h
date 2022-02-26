@@ -15,8 +15,12 @@ typedef struct profile {
     mixer_profile mixer;
 } profile;
 
-extern size_t g_current_profile;
+extern size_t g_profile_idx;
 extern profile* g_profiles[MAX_NUM_PROFILES];
+extern bool g_profiles_save_needed[MAX_NUM_PROFILES];
+extern bool g_profiles_load_needed[MAX_NUM_PROFILES];
+extern bool g_profile_idx_save_needed;
+
 
 #define DEFAULT_PROFILE()\
     {\
@@ -48,8 +52,14 @@ void profile_update_mixer_enable(unsigned source_idx, bool enabled);
 
 uint8_t* serialize_profile(profile* input);
 profile* deserialize_profile(uint8_t* data);
-void fs_save_profiles(profile **profiles, size_t *current_profile, size_t num_profiles);
-void fs_get_profiles(profile **profiles, size_t *current_profile, size_t num_profiles);
+
+void fs_save_profiles(profile **profiles, size_t current_profile, size_t num_profiles);
+void fs_save_profile(profile **profiles, size_t selected_profile);
+void fs_save_current_profile_index(size_t current_profile);
+
+void fs_load_profiles(profile **profiles, size_t *current_profile, size_t num_profiles);
+void fs_load_profile(profile **profiles, size_t selected_profile);
+
 void fs_profiles_init(size_t num_profiles);
 
 void fs_init();
