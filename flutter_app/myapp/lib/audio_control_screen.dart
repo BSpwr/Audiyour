@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
-
+import 'dart:typed_data';
 /*
 static const uint16_t GATTS_CHAR_EQ_GAINS_VAL                       = 0xFF01;
+static const uint16_t GATTS_CHAR_EQ_ENABLE_VAL                      = 0xFF05;
 static const uint16_t GATTS_CHAR_MIXER_INPUT_GAINS_VAL              = 0xFF02;
 static const uint16_t GATTS_CHAR_MIXER_ENABLE_JACK_IN_VAL           = 0xFF03;
 static const uint16_t GATTS_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN_VAL = 0xFF04;
-static const uint16_t GATTS_CHAR_OUTPUT_GAIN_VAL                    = 0xFF05;
+static const uint16_t GATTS_CHAR_OUTPUT_GAIN_VAL                    = 0xFF06;
  */
 
 class DeviceScreen extends StatefulWidget {
@@ -167,24 +168,50 @@ class _DeviceScreenState extends State<DeviceScreen> {
           }
         });
     //Look for services and their charecteristics
+    // skipping the 1st as this is the "actual" mtu and not the changed one
     _services = await widget.device.discoverServices();
+    for (var i in _services){
+      print('Service\n');
+      print(i.uuid);
+      print('Char\n');
+      for (var j in i.characteristics){
+        print(j.uuid);
+      }
+    }
+    await widget.device.requestMtu(45); // I would await this regardless, set a timeout if you are concerned
+    await Future.delayed(const Duration(seconds: 1));
+
+    var mtuChanged = Completer<void>();
+
+  // mtu is of type 'int'
+    var mtuStreamSubscription = widget.device.mtu.listen((mtu) {
+      if(mtu == 45) mtuChanged.complete();
+    });
+    //https://github.com/pauldemarco/flutter_blue/issues/902
+    await mtuChanged.future; // set timeout and catch exception
+    mtuStreamSubscription.cancel();
+
+    print('=========================================================================');
 
     //Read values of Equalizer and Mixer gains
     List<int> tempGain = await _services[2].characteristics[0].read();
-    List<int> tempMixerGains = await _services[2].characteristics[1].read();
+    List<int> tempMixerGains = await _services[2].characteristics[2].read();
+    //_services[2].characteristics[0].write(tempGain);
+    print('=========================================================================');
+    //Converts ints to 8bit unsigned
+    final bytes = Uint8List.fromList(tempGain);
+    print("This is the bytes received from board $bytes");
+    final byteData = ByteData.sublistView(bytes);
 
-    //Converts casts values to int8
-    for (int i = 0; i<10 ;i++) {
-      int temp = tempGain[i].toSigned(8);
-      widget.gain[i] = temp.toDouble();
-      if (i < 2) {
-        int temp1 = tempMixerGains[i].toSigned(8);
-        widget.mixerGains[i] = temp1.toDouble();
-      }
+    var j = 0;
+    //https://stackoverflow.com/questions/67366326/how-to-convert-a-byte-array-to-a-double-float-value-in-dart
+    for (var i = 0; i < byteData.lengthInBytes; i += 4) {
+      double value = byteData.getFloat32(i, Endian.little);
+      widget.gain[j++] = value;
+      //print(byteData.getFloat32(i, Endian.little));
     }
 
-    print('Below is the value read from device in double');
-    print(widget.gain);
+    print('Float value sent by board ${widget.gain}');
 
     setState(()  {
     });
@@ -201,7 +228,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       List<int> gainEqualizerInts = widget.gain.map((e) => e.toInt()).toList();
       List<int> gainMixerInts = widget.gain.map((e) => e.toInt()).toList();
       _services[2].characteristics[0].write(gainEqualizerInts, withoutResponse: false);
-      _services[2].characteristics[1].write(gainMixerInts, withoutResponse: false);
+      _services[2].characteristics[2].write(gainMixerInts, withoutResponse: false);
       widget.device.disconnect();
       print('###################### Disconnected ####################################');
     } catch (e) {
@@ -256,16 +283,16 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
                       //First
-                      EqualizerSlider(index: 0, freq:freq, gain: widget.gain, service: _services, key: UniqueKey()),
-                      EqualizerSlider(index: 1,freq:freq, gain: widget.gain, service: _services, key: UniqueKey()),
-                      EqualizerSlider(index: 2,freq:freq, gain: widget.gain, service: _services, key: UniqueKey()),
-                      EqualizerSlider(index: 3,freq:freq, gain: widget.gain, service: _services, key: UniqueKey()),
-                      EqualizerSlider(index: 4,freq:freq, gain: widget.gain, service: _services, key: UniqueKey()),
-                      EqualizerSlider(index: 5,freq:freq, gain: widget.gain, service: _services, key: UniqueKey()),
-                      EqualizerSlider(index: 6,freq:freq, gain: widget.gain, service: _services, key: UniqueKey()),
-                      EqualizerSlider(index: 7,freq:freq, gain: widget.gain, service: _services, key: UniqueKey()),
-                      EqualizerSlider(index: 8,freq:freq, gain: widget.gain, service: _services, key: UniqueKey()),
-                      EqualizerSlider(index: 9,freq:freq, gain: widget.gain, service: _services, key: UniqueKey()),
+                      EqualizerSlider(index: 0, freq:freq, gain: widget.gain, service: _services, key: UniqueKey(), device: widget.device),
+                      EqualizerSlider(index: 1,freq:freq, gain: widget.gain, service: _services, key: UniqueKey(), device: widget.device),
+                      EqualizerSlider(index: 2,freq:freq, gain: widget.gain, service: _services, key: UniqueKey(), device: widget.device),
+                      EqualizerSlider(index: 3,freq:freq, gain: widget.gain, service: _services, key: UniqueKey(), device: widget.device),
+                      EqualizerSlider(index: 4,freq:freq, gain: widget.gain, service: _services, key: UniqueKey(), device: widget.device),
+                      EqualizerSlider(index: 5,freq:freq, gain: widget.gain, service: _services, key: UniqueKey(), device: widget.device),
+                      EqualizerSlider(index: 6,freq:freq, gain: widget.gain, service: _services, key: UniqueKey(), device: widget.device),
+                      EqualizerSlider(index: 7,freq:freq, gain: widget.gain, service: _services, key: UniqueKey(), device: widget.device),
+                      EqualizerSlider(index: 8,freq:freq, gain: widget.gain, service: _services, key: UniqueKey(), device: widget.device),
+                      EqualizerSlider(index: 9,freq:freq, gain: widget.gain, service: _services, key: UniqueKey(), device: widget.device),
                     ],
                   )
               ),
@@ -287,10 +314,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       setState(() {
                         if (enableAUX) {
                           statusAUX[0] = 0;
-                          _services[2].characteristics[2].write(statusAUX);
+                          //_services[2].characteristics[2].write(statusAUX);
                         } else {
                           statusAUX[0] = 1;
-                          _services[2].characteristics[2].write(statusAUX);
+                          //_services[2].characteristics[2].write(statusAUX);
                         }
                         enableAUX = !enableAUX;
                       });
@@ -342,10 +369,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
 class EqualizerSlider extends StatefulWidget {
   final int index;
   final List<int> freq;
+  var device;
   List<double> gain;
   List<BluetoothService> service;
 
-  EqualizerSlider({Key? key, required this.index, required this.freq, required this.gain, required this.service}): super(key: key);
+  EqualizerSlider({Key? key, required this.index, required this.freq, required this.gain, required this.service, required this.device}): super(key: key);
 
   /*
   //final String title;
@@ -374,26 +402,78 @@ class _EqualizerSlider extends State<EqualizerSlider> {
     _setSliderValue();
   }
 
+  /// Returns a float value (as a double) that approximates the double.
+  double roundableFloat(double doubleValue, int fractionalDigits) {
+    var valueFloat = Float32List (1);
+    valueFloat [0] = double.parse ("2.1");
+    var listOfBytes = valueFloat.buffer.asUint8List ();
+    return 1.0;
+  }
+
   //Function called by listener when myController changes
-  _setSliderValue () {
+  _setSliderValue () async{
     setState(() {
-      if (double.parse(myController.text).roundToDouble() < -20.0) {
+      if (double.parse(myController.text) < -20.0) {
         widget.gain[widget.index] = -20.0;
-        myController.text = '-20';
+        myController.text = '-20.0';
       }
-      else if (double.parse(myController.text).roundToDouble() > 10.0) {
+      else if (double.parse(myController.text) > 10.0) {
         widget.gain[widget.index] = 10.0;
-        myController.text = '10';
+        myController.text = '10.0';
       }
       else {
-        widget.gain[widget.index] = double.parse(myController.text).roundToDouble();
+        widget.gain[widget.index] = double.parse(myController.text);
       }
       //Converts List double to List int
       gainInts = widget.gain.map((e) => e.toInt()).toList();
 
       //If services and gains are not empty
       if(gainInts.isNotEmpty && widget.service.isNotEmpty) {
-        widget.service[2].characteristics[0].write(gainInts);
+
+        /*List<int> gainMixerInts = widget.gain.map((e) => e.toInt()).toList();
+        final bytes = Uint8List.fromList(gainMixerInts);
+        print(bytes);
+        final byteData = ByteData.sublistView(bytes);
+        print(byteData);*/
+
+        /*var j = 0;
+        //https://stackoverflow.com/questions/67366326/how-to-convert-a-byte-array-to-a-double-float-value-in-dart
+        for (var i = 0; i < byteData.lengthInBytes; i += 4) {
+          double value = byteData.getFloat32(i, Endian.little);
+          widget.gain[j++] = value;
+          print(byteData.getFloat32(i));
+        }*/
+        print('About to send this from widget: ${widget.index}');
+
+        var valueFloat = Float32List(10);
+        int j = 0;
+        for(var i  in widget.gain){
+          valueFloat[j] = double.parse (widget.gain[j].toString());
+          j++;
+        }
+        valueFloat [0] = double.parse (widget.gain[widget.index].toString());
+        var listOfBytes = valueFloat.buffer.asUint8List();
+
+        print("This is the list of bytes for float: $listOfBytes");
+
+
+/*        //final bytes1 = Uint8List.fromList(widget.gain);
+        //print('This is bytes: ${bytes1}');
+        final bytes = Uint8List.fromList(floatVals);
+        print('This is bytes: ${bytes}');
+        final byteData = ByteData.sublistView(bytes);
+        print('This is bytesdata: ${byteData.lengthInBytes}');
+
+        print('About loop');
+        //byteData.setFloat32(widget.index, widget.gain[widget.index], Endian.little);
+        print('This is the value send: ${byteData}');
+        print('Sending this');
+        print(floatVals);*/
+
+
+
+
+        widget.service[2].characteristics[0].write(listOfBytes);
       }
       //print('Values: $gainInts');
     });
@@ -512,7 +592,7 @@ class _MixerSlider extends State<MixerSlider> {
 
       //If services and gains are not empty
       if(mixerGainsInt.isNotEmpty && widget.service.isNotEmpty) {
-        widget.service[2].characteristics[1].write(mixerGainsInt);
+        //widget.service[2].characteristics[2].write(mixerGainsInt);
       }
     });
   }
@@ -540,7 +620,7 @@ class _MixerSlider extends State<MixerSlider> {
             setState(() {
               widget.mixerGains[widget.index] = value;
               //Forces a call to _setSliderValue with change
-              myController.text = value.toInt().toString();
+              myController.text = value.toString();
             });
           },
         ),
