@@ -178,7 +178,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
         print(j.uuid);
       }
     }
-    await widget.device.requestMtu(45); // I would await this regardless, set a timeout if you are concerned
+    await widget.device.requestMtu(100); // I would await this regardless, set a timeout if you are concerned
     await Future.delayed(const Duration(seconds: 1));
 
     var mtuChanged = Completer<void>();
@@ -391,8 +391,6 @@ class _EqualizerSlider extends State<EqualizerSlider> {
 
   final myController = TextEditingController();
 
-  List<int> gainInts = [];
-
   @override
   void initState() {
     super.initState();
@@ -424,11 +422,9 @@ class _EqualizerSlider extends State<EqualizerSlider> {
       else {
         widget.gain[widget.index] = double.parse(myController.text);
       }
-      //Converts List double to List int
-      gainInts = widget.gain.map((e) => e.toInt()).toList();
 
       //If services and gains are not empty
-      if(gainInts.isNotEmpty && widget.service.isNotEmpty) {
+      if(widget.gain.isNotEmpty && widget.service.isNotEmpty) {
 
         /*List<int> gainMixerInts = widget.gain.map((e) => e.toInt()).toList();
         final bytes = Uint8List.fromList(gainMixerInts);
@@ -448,10 +444,9 @@ class _EqualizerSlider extends State<EqualizerSlider> {
         var valueFloat = Float32List(10);
         int j = 0;
         for(var i  in widget.gain){
-          valueFloat[j] = double.parse (widget.gain[j].toString());
+          valueFloat[j] = widget.gain[j];
           j++;
         }
-        valueFloat [0] = double.parse (widget.gain[widget.index].toString());
         var listOfBytes = valueFloat.buffer.asUint8List();
 
         print("This is the list of bytes for float: $listOfBytes");
