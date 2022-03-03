@@ -207,7 +207,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
       GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_current_profile_save), (uint8_t *)&temp_current_profile_save}},
 
     /* Characteristic Declaration */
-    [IDX_CHAR_PROFILE_LOADN]      =
+    [IDX_CHAR_PROFILE_LOAD]      =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write}},
     /* Characteristic Value */

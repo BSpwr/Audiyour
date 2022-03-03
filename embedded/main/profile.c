@@ -57,18 +57,18 @@ void profile_writeback_task() {
                 g_profiles_save_needed[i] = false;
             }
         }
-        vTaskDelay(50);
         for (size_t i = 0; i < MAX_NUM_PROFILES; ++i) {
             if (g_profiles_load_needed[i]) {
                 fs_load_profile(g_profiles, i);
                 g_profiles_load_needed[i] = false;
+                apply_active_profile();
             }
         }
-        vTaskDelay(50);
         if (g_profile_idx_save_needed) {
             fs_save_current_profile_index(g_profile_idx);
             g_profile_idx_save_needed = false;
         }
+        vTaskDelay(10);
     }
 }
 
@@ -86,7 +86,7 @@ void apply_active_profile() {
 void switch_active_profile(size_t current_profile) {
     g_profile_idx = current_profile;
     apply_active_profile();
-    g_profile_idx_save_needed = current_profile;
+    g_profile_idx_save_needed = true;
 }
 
 void profile_update_equalizer_gains(float equalizer_gains[10]) {
@@ -100,6 +100,7 @@ void profile_update_equalizer_enable(bool enabled) {
 }
 
 void profile_update_mixer_gain(unsigned source_idx, float gain_db) {
+    ESP_LOGI(TAG, "hrggg: %d", (int)g_profiles[g_profile_idx]->mixer.settings.gains);
     g_profiles[g_profile_idx]->mixer.settings.gains[source_idx] = gain_db;
     pipeline_update_mixer_gain(&g_audiyour_pipeline, source_idx, gain_db);
 }
@@ -187,14 +188,14 @@ void fs_save_profiles(profile **profiles, size_t current_profile, size_t num_pro
 }
 
 void fs_save_profile(profile **profiles, size_t selected_profile) {
-    ESP_LOGI(TAG, "saving current profile");
-    FILE *file = fopen(profile_filename, "w");
+    ESP_LOGI(TAG, "saving profile: %d", selected_profile);
+    FILE *file = fopen(profile_filename, "r+");
 
     profile default_p = DEFAULT_PROFILE();
     size_t data_size = profile_size(&default_p);
 
     // seek to profile[selected_profile]
-    fseek(file, data_size * selected_profile, SEEK_SET);
+    fseek(file, sizeof(size_t) + data_size * selected_profile, SEEK_SET);
 
     uint8_t* serialized = serialize_profile(profiles[selected_profile]);
     fwrite(serialized, sizeof(uint8_t), data_size, file);
@@ -204,8 +205,8 @@ void fs_save_profile(profile **profiles, size_t selected_profile) {
 }
 
 void fs_save_current_profile_index(size_t current_profile) {
-    ESP_LOGI(TAG, "saving current profile");
-    FILE *file = fopen(profile_filename, "w");
+    ESP_LOGI(TAG, "saving current profile index: %d", current_profile);
+    FILE *file = fopen(profile_filename, "r+");
 
     profile default_p = DEFAULT_PROFILE();
     size_t data_size = profile_size(&default_p);
@@ -217,14 +218,14 @@ void fs_save_current_profile_index(size_t current_profile) {
 
 // Load just the selected profile
 void fs_load_profile(profile **profiles, size_t selected_profile) {
-    ESP_LOGI(TAG, "getting profiles");
+    ESP_LOGI(TAG, "getting profile: %d", selected_profile);
     FILE *file;
 
     profile default_p = DEFAULT_PROFILE();
     size_t data_size = profile_size(&default_p);
     
     if ((file = fopen(profile_filename, "r"))) {
-        fseek(file, data_size * selected_profile, SEEK_SET);
+        fseek(file, sizeof(size_t) + data_size * selected_profile, SEEK_SET);
 
         uint8_t* serialized = calloc(data_size, sizeof(uint8_t));
         fread(serialized, sizeof(uint8_t), data_size, file);
@@ -246,7 +247,7 @@ void fs_load_profile(profile **profiles, size_t selected_profile) {
 
 // Load all the profiles and also the current_profile index
 void fs_load_profiles(profile **profiles, size_t *current_profile, size_t num_profiles) {
-    ESP_LOGI(TAG, "getting profiles");
+    ESP_LOGI(TAG, "getting all profiles");
     FILE *file;
 
     profile default_p = DEFAULT_PROFILE();

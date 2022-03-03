@@ -74,8 +74,26 @@ class MainUI(Qw.QWidget):
         self.conn_status_layout.addWidget(self.check_conn_label)
         self.conn_status_layout.addWidget(self.disconnect_btn)
 
+        self.NUM_PROFILES = 5
+        self.profile_sel = ProfileComboBox(self.NUM_PROFILES, parent=self)
+        self.profile_sel.activated.connect(lambda profile_idx: asyncio.ensure_future(self.update_profile(profile_idx)))
+
+        self.profile_load_btn = Qw.QPushButton('Load Profile')
+        self.profile_load_btn.clicked.connect(lambda: asyncio.ensure_future(self.load_profile()))
+
+        self.profile_save_btn = Qw.QPushButton('Save Profile')
+        self.profile_save_btn.clicked.connect(lambda: asyncio.ensure_future(self.bt_man.write_save_profile()))
+
+        self.profile_layout = Qw.QHBoxLayout()
+        self.profile_layout.addWidget(self.profile_sel)
+        self.profile_layout.addWidget(self.profile_load_btn)
+        self.profile_layout.addWidget(self.profile_save_btn)
+
         self.conn_group = Qw.QGroupBox("Connection")
         self.conn_group.setLayout(self.conn_status_layout)
+
+        self.profile_group = Qw.QGroupBox("Profile")
+        self.profile_group.setLayout(self.profile_layout)
 
         self.equalizer_layout = Qw.QHBoxLayout()
         self.equalizer_layout.addWidget(self.equalizer)
@@ -91,6 +109,7 @@ class MainUI(Qw.QWidget):
 
         self.layout = Qw.QVBoxLayout()
         self.layout.addWidget(self.conn_group)
+        self.layout.addWidget(self.profile_group)
         self.layout.addWidget(self.equalizer_group)
         self.layout.addWidget(self.mixer_group)
         self.setLayout(self.layout)
@@ -107,6 +126,20 @@ class MainUI(Qw.QWidget):
             self.devices[device.name] = device.address
         self.device_sel.updateDevices(devices)
 
+    async def update_profile(self, profile_idx: int):
+        await self.bt_man.write_profile_index(profile_idx)
+        if self.bt_man.is_connected():
+            asyncio.ensure_future(self.equalizer.load_settings())
+            asyncio.ensure_future(self.mixer.load_settings())
+
+    async def load_profile(self):
+        await self.bt_man.write_load_profile()
+        while (await self.bt_man.read_load_profile()):
+            asyncio.sleep(0.1)
+        if self.bt_man.is_connected():
+            asyncio.ensure_future(self.equalizer.load_settings())
+            asyncio.ensure_future(self.mixer.load_settings())
+
     async def update_device(self, port_idx: str):
         self.bt_man.set_address(self.devices[self.device_sel.itemText(port_idx)])
         await self.bt_man.connect()
@@ -115,6 +148,8 @@ class MainUI(Qw.QWidget):
             # # load values from DSP
             asyncio.ensure_future(self.equalizer.load_settings())
             asyncio.ensure_future(self.mixer.load_settings())
+            await self.bt_man.read_profile_index()
+            self.profile_sel.setCurrentIndex(self.bt_man.profile_index)
 
     async def disconnect(self):
         await self.bt_man.disconnect()
@@ -141,6 +176,12 @@ class DeviceComboBox(Qw.QComboBox):
         self.clear()
         for device in devices:
             self.addItem(device.name)
+
+class ProfileComboBox(Qw.QComboBox):
+    def __init__(self, num_profiles: int, parent=None):
+        super().__init__(parent)
+        for i in range(1, num_profiles+1):
+            self.addItem(str(i))
 
 # app = Qw.QApplication(sys.argv)  # Create application
 
