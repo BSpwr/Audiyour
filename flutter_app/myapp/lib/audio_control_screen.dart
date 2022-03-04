@@ -42,7 +42,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
   bool enableBT = true;
   bool enableAUX = true;
   bool enableEQ = true;
-
+  String dropdownValue = 'One';
   @override
   initState() {
     super.initState();
@@ -316,8 +316,57 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 ],
               ),
               const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 5.0),
+              const CustomDivider(text: 'Profile'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Spacer(),
+                  DropdownButton<String>(
+                    value: dropdownValue,
+                    //icon: const Icon(Icons.arrow_downward),
+                    elevation: 16,
+                    style: const TextStyle(color: Colors.blue),
+                    underline: Container(
+                      height: 2,
+                      color: Colors.blue,
+                    ),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        dropdownValue = newValue!;
+                      });
+                    },
+                    items: <String>['One', 'Two', 'Three', 'Four', 'Five']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        primary: enableEQ ? Colors.blue : Colors.transparent,
+                        padding: const EdgeInsets.fromLTRB(5, 0, 5, 0),
+                      ),
+                      child: const Text('Load Profile'),
+                      onPressed: () {}
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          primary: Colors.blue,
+                          padding: const EdgeInsets.fromLTRB(5, 0, 5, 0)
+                      ),
+                      child: const Text('Save Profile'),
+                      onPressed: () {
+                      }
+                  ),
+                  const Spacer(),
+                ],
+              ),
               const CustomDivider(text: 'Equalizer'),
-              const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 15.0),
+              const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 5.0),
               Row (
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -383,7 +432,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   const Spacer(),
                 ],
               ),
-              const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 15.0),
+              const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 10.0),
               SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
@@ -403,10 +452,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     ],
                   )
               ),
-
-              const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 15.0),
+              const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 5.0),
               const CustomDivider(text: 'Mixer'),
-              const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 15.0),
+              const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 5.0),
               Row (
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -487,11 +535,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   const Spacer(),
                 ],
               ),
-              const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 15.0),
+              const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 10.0),
               MixerSlider(index: 0, name: source, key: UniqueKey(),
                       mixerGains: widget.mixerGains, service: _services),
-                  MixerSlider(index: 1, name: source, key: UniqueKey(),
-                      mixerGains: widget.mixerGains, service: _services),
+              MixerSlider(index: 1, name: source, key: UniqueKey(),
+                  mixerGains: widget.mixerGains, service: _services),
             ],
           )
       ),
@@ -758,8 +806,8 @@ class _MixerSlider extends State<MixerSlider> {
                   )
                 )
             ),
-            const Text('  dB', style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
-            ),
+            const Text('  dB',
+                style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold)),
             const Spacer(),
 
           ],
@@ -807,6 +855,7 @@ class CustomDivider extends StatelessWidget {
               child: Divider(indent: 15.0,endIndent: 15.0,thickness: 1.5)
           ),
           Text(text,
+              textAlign: TextAlign.left,
               style: const TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold)
           ),
           const Expanded(
