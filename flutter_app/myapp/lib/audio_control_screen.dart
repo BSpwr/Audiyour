@@ -200,7 +200,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
     });
     //Look for services and their characteristics and prints
     _services = await widget.device.discoverServices();
-/*    for (var i in _services){
+    /*
+      for (var i in _services){
       print('Service\n');
       print(i.uuid);
       print('\tChar\n');
@@ -487,16 +488,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 ],
               ),
               const Divider(color: Color.fromRGBO(0, 0, 0, 0),height: 15.0),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  MixerSlider(index: 0, name: source, key: UniqueKey(),
+              MixerSlider(index: 0, name: source, key: UniqueKey(),
                       mixerGains: widget.mixerGains, service: _services),
                   MixerSlider(index: 1, name: source, key: UniqueKey(),
                       mixerGains: widget.mixerGains, service: _services),
-                ],
-              ),
-
             ],
           )
       ),
@@ -734,10 +729,42 @@ class _MixerSlider extends State<MixerSlider> {
       textBaseline: TextBaseline.alphabetic,
       children: <Widget>[
         //Widget that holds slider name
-        Text(
-          widget.name[widget.index].toString(),
-          style: const TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Spacer(),
+            Text(
+              widget.name[widget.index].toString(),
+              style: const TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold)
+            ),
+            const Spacer(),
+            const Spacer(),
+            const Spacer(),
+            const Spacer(),
+            const Spacer(),
+            SizedBox(
+                width: 40.0,
+                height: 20,
+                child: TextField(
+                  textAlignVertical: TextAlignVertical.center,
+                  textAlign: TextAlign.center,
+                  controller: myController,
+                  //onSubmitted:
+                  decoration: const InputDecoration.collapsed (border: OutlineInputBorder(),
+                      hintText: '0.0'
+                  ),
+                  style: const TextStyle(fontSize: 15.0,
+                      fontWeight: FontWeight.bold
+                  )
+                )
+            ),
+            const Text('  dB', style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+
+          ],
         ),
+
         //Widget for the slider
         Slider(
           value: widget.mixerGains[widget.index],
@@ -759,24 +786,7 @@ class _MixerSlider extends State<MixerSlider> {
             crossAxisAlignment: CrossAxisAlignment.center,
             textBaseline: TextBaseline.alphabetic,
             children: <Widget>[
-              SizedBox(
-                  width: 40.0,
-                  height: 20,
-                  child: TextField(
-                    textAlignVertical: TextAlignVertical.center,
-                    textAlign: TextAlign.center,
-                    controller: myController,
-                    //onSubmitted:
-                    decoration: const InputDecoration.collapsed (border: OutlineInputBorder(),
-                        hintText: '0.0'
-                    ),
-                    style: const TextStyle(fontSize: 15.0,
-                        fontWeight: FontWeight.bold
-                    ),
-                  )
-              ),
-              const Text('  dB', style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
-              ),
+
             ]
         ),
       ],
