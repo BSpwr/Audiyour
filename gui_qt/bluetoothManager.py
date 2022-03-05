@@ -1,3 +1,5 @@
+import struct
+from tkinter import FALSE
 from typing import List
 import qasync
 from bleak import BleakClient, BleakScanner
@@ -9,14 +11,21 @@ class BluetoothManager:
     def __init__(self):
         self.AUDIYOUR_CONFIG_SERVICE = '000000ff-0000-1000-8000-00805f9b34fb'
         self.EQUALIZER_GAINS_CHARACTERISTIC = '0000ff01-0000-1000-8000-00805f9b34fb'
+        self.EQUALIZER_ENABLE_CHARACTERISTIC = '0000ff05-0000-1000-8000-00805f9b34fb'
         self.MIXER_GAINS_CHARACTERISTIC = '0000ff02-0000-1000-8000-00805f9b34fb' 
         self.MIXER_LINE_IN_ENABLE_CHARACTERISTIC = '0000ff03-0000-1000-8000-00805f9b34fb' 
         self.MIXER_WIRELESS_ENABLE_CHARACTERISTIC = '0000ff04-0000-1000-8000-00805f9b34fb'
+        self.PROFILE_INDEX_CHARACTERISTIC = '0000ff06-0000-1000-8000-00805f9b34fb'
+        self.PROFILE_SAVE_CHARACTERISTIC = '0000ff07-0000-1000-8000-00805f9b34fb'
+        self.PROFILE_LOAD_CHARACTERISTIC = '0000ff08-0000-1000-8000-00805f9b34fb'
 
-        self.eq_gains = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.mix_gains = [0, 0]
-        self.mix_line_in_en = True
-        self.mix_wireless_in_en = True
+        self.eq_gains: list[float] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.eq_enable = False
+        self.mix_gains: list[float] = [0, 0]
+        self.mix_line_in_en = False
+        self.mix_wireless_in_en = False
+        self.profile_index: int = 0
+
         self.mac_address = None
 
         self.client = None
@@ -68,7 +77,16 @@ class BluetoothManager:
 
         value = await self.client.read_gatt_char(self.EQUALIZER_GAINS_CHARACTERISTIC)
         for i in range(0, 10):
-            self.eq_gains[i] = int.from_bytes([value[i]], "little", signed=True)
+            self.eq_gains[i] = struct.unpack('<f', value[i*4:i*4+4])[0]
+
+
+    async def read_eq_enable(self):
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        value = await self.client.read_gatt_char(self.EQUALIZER_ENABLE_CHARACTERISTIC)
+        self.eq_enable = bool(int.from_bytes([value[0]], "little", signed=False))
 
 
     async def read_mix_gains(self):
@@ -78,7 +96,7 @@ class BluetoothManager:
 
         value = await self.client.read_gatt_char(self.MIXER_GAINS_CHARACTERISTIC)
         for i in range(0, 2):
-            self.mix_gains[i] = int.from_bytes([value[i]], "little", signed=True)
+            self.mix_gains[i] = struct.unpack('<f', value[i*4:i*4+4])[0]
 
 
     async def read_mix_line_in_en(self):
@@ -87,7 +105,7 @@ class BluetoothManager:
             return
 
         value = await self.client.read_gatt_char(self.MIXER_LINE_IN_ENABLE_CHARACTERISTIC)
-        self.mix_line_in_en = bool(int.from_bytes([value[0]], "little", signed=True))
+        self.mix_line_in_en = bool(int.from_bytes([value[0]], "little", signed=False))
 
 
     async def read_mix_wireless_in_en(self):
@@ -96,8 +114,31 @@ class BluetoothManager:
             return
 
         value = await self.client.read_gatt_char(self.MIXER_WIRELESS_ENABLE_CHARACTERISTIC)
-        self.mix_wireless_in_en = bool(int.from_bytes([value[0]], "little", signed=True))
+        self.mix_wireless_in_en = bool(int.from_bytes([value[0]], "little", signed=False))
 
+    async def read_profile_index(self):
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        value = await self.client.read_gatt_char(self.PROFILE_INDEX_CHARACTERISTIC)
+        self.profile_index = int.from_bytes([value[0]], "little", signed=False)
+
+    async def read_save_profile(self) -> bool:
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        value = await self.client.read_gatt_char(self.PROFILE_SAVE_CHARACTERISTIC)
+        bool(int.from_bytes([value[0]], "little", signed=False))
+
+    async def read_load_profile(self) -> bool:
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        value = await self.client.read_gatt_char(self.PROFILE_LOAD_CHARACTERISTIC)
+        return bool(int.from_bytes([value[0]], "little", signed=False))
 
     async def write_eq_gains(self, new_gains):
         await self.connect()
@@ -117,12 +158,41 @@ class BluetoothManager:
 
         new_gains_bytes = b''
         for i in new_gains:
-            new_gains_bytes = new_gains_bytes + i.to_bytes(1, "little", signed=True)
+            new_gains_bytes = new_gains_bytes + bytearray(struct.pack("<f", i))
+            # i.to_bytes(1, "little", signed=True)
 
         self.eq_gains = new_gains
 
         k = await self.client.write_gatt_char(self.EQUALIZER_GAINS_CHARACTERISTIC, new_gains_bytes, response=True)
         # self.eq_gails_characteristic.write_value(new_gains_bytes)
+
+    async def write_eq_enable(self, new_status: bool):
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        this_call = datetime.now()
+
+        if self._last_call is not None:
+            time_since_last_call = this_call - self._last_call
+            if time_since_last_call < self._wait:
+                return
+
+        self._last_call = this_call
+
+        print(new_status)
+
+        if new_status:
+            new_status = 1
+        else:
+            new_status = 0
+
+        new_status_bytes = b''
+        new_status_bytes = new_status.to_bytes(1, "little", signed=False)
+
+        print(new_status_bytes)
+
+        k = await self.client.write_gatt_char(self.EQUALIZER_ENABLE_CHARACTERISTIC, new_status_bytes, response=True)
 
 
     async def write_mix_gains(self, new_gains):
@@ -143,7 +213,7 @@ class BluetoothManager:
 
         new_gains_bytes = b''
         for i in new_gains:
-            new_gains_bytes = new_gains_bytes + i.to_bytes(1, "little", signed=True)
+            new_gains_bytes = new_gains_bytes + bytearray(struct.pack("<f", i))
 
         self.mix_gains = new_gains
 
@@ -173,9 +243,7 @@ class BluetoothManager:
             new_status = 0
 
         new_status_bytes = b''
-        new_status_bytes = new_status.to_bytes(1, "little", signed=True)
-
-        print(new_status_bytes)
+        new_status_bytes = new_status.to_bytes(1, "little", signed=False)
 
         k = await self.client.write_gatt_char(self.MIXER_LINE_IN_ENABLE_CHARACTERISTIC, new_status_bytes, response=True)
 
@@ -202,9 +270,7 @@ class BluetoothManager:
             new_status = 0
 
         new_status_bytes = b''
-        new_status_bytes = new_status.to_bytes(1, "little", signed=True)
-
-        print(new_status_bytes)
+        new_status_bytes = new_status.to_bytes(1, "little", signed=False)
 
         k = await self.client.write_gatt_char(self.MIXER_WIRELESS_ENABLE_CHARACTERISTIC, new_status_bytes, response=True)
 
@@ -234,6 +300,60 @@ class BluetoothManager:
                 return
 
         await self.write_mix_gains(self.mix_gains)
+
+    async def write_profile_index(self, profile_index: int):
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        this_call = datetime.now()
+
+        if self._last_call is not None:
+            time_since_last_call = this_call - self._last_call
+            if time_since_last_call < self._wait:
+                return
+
+        self._last_call = this_call
+
+        new_profile_index = profile_index.to_bytes(1, "little", signed=False)
+
+        k = await self.client.write_gatt_char(self.PROFILE_INDEX_CHARACTERISTIC, new_profile_index, response=True)
+
+    async def write_save_profile(self):
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        this_call = datetime.now()
+
+        if self._last_call is not None:
+            time_since_last_call = this_call - self._last_call
+            if time_since_last_call < self._wait:
+                return
+
+        self._last_call = this_call
+
+        bool_one = (1).to_bytes(1, "little", signed=False)
+
+        k = await self.client.write_gatt_char(self.PROFILE_SAVE_CHARACTERISTIC, bool_one, response=True)
+
+    async def write_load_profile(self):
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        this_call = datetime.now()
+
+        if self._last_call is not None:
+            time_since_last_call = this_call - self._last_call
+            if time_since_last_call < self._wait:
+                return
+
+        self._last_call = this_call
+
+        bool_one = (1).to_bytes(1, "little", signed=False)
+
+        k = await self.client.write_gatt_char(self.PROFILE_LOAD_CHARACTERISTIC, bool_one, response=True)
 
 # async def main(address):
 #     async with BleakClient(address) as client:

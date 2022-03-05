@@ -1,169 +1,79 @@
-// Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD.>
-// All rights reserved.
+#ifndef MIXER_H_
+#define MIXER_H_
 
-#ifndef _DOWNMIX_H_
-#define _DOWNMIX_H_
-
+#include <stdbool.h>
 #include "esp_err.h"
 #include "audio_element.h"
-#include "esp_downmix.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+typedef struct mixer_settings {
+    float *gains;
+    bool *enabled;
+} mixer_settings;
 
-/**
-* @brief      Downmix configuration
-*/
+// Would use templates, but this is C, not C++
+// typedef struct mixer_settings_2 {
+//     float gains[2];
+//     bool enabled[2];
+// } mixer_settings_2;
+
+typedef struct mixer_profile {
+    size_t num_sources;
+    mixer_settings settings;
+} mixer_profile;
+
+// typedef struct mixer_profile_2 {
+//     size_t num_sources;
+//     mixer_settings_2 settings;
+// } mixer_profile_2;
+
 typedef struct {
-    esp_downmix_info_t downmix_info; /*!< Downmix information */
-    int max_sample;                  /*!< The number of samples per downmix processing */
+    int max_sample;                  /*!< The number of samples per call to process */
     int out_rb_size;                 /*!< Size of ring buffer */
     int task_stack;                  /*!< Size of task stack */
     int task_core;                   /*!< Task running in core... */
     int task_prio;                   /*!< Task priority (based on the FreeRTOS priority) */
     bool stack_in_ext;               /*!< Try to allocate stack in external memory */
-} downmix_cfg_t;
+    mixer_profile profile;
+} mixer_cfg_t;
 
-#define MIXER_TASK_STACK (8 * 1024)
-#define MIXER_TASK_CORE (0)
-#define MIXER_TASK_PRIO (5)
-#define MIXER_RINGBUFFER_SIZE (8 * 1024)
-#define MIXER_BUF_SIZE (256)
+#define mixer_TASK_STACK (8 * 1024)
+#define mixer_TASK_CORE (0)
+#define mixer_TASK_PRIO (5)
+#define mixer_RINGBUFFER_SIZE (8 * 1024)
+#define mixer_BUF_SIZE (256)
+
+#define mixer_NUM_SOURCES (2)
+static float default_gains2[mixer_NUM_SOURCES] = {0.0f, 0.0f};
+static bool default_enabled2[mixer_NUM_SOURCES] = {true, true};
+
 
 #define DEFAULT_MIXER_CONFIG()                                      \
     {                                                                 \
-        .downmix_info = {                    \
-            .source_num = SOURCE_NUM_MAX,                             \
-            .out_ctx = ESP_DOWNMIX_OUT_CTX_LEFT_RIGHT,                \
-            .mode = ESP_DOWNMIX_WORK_MODE_BYPASS,                     \
-            .output_type = ESP_DOWNMIX_OUTPUT_TYPE_TWO_CHANNEL,       \
-        },                                                            \
         .max_sample = MIXER_BUF_SIZE,                                    \
         .out_rb_size = MIXER_RINGBUFFER_SIZE,                       \
         .task_stack = MIXER_TASK_STACK,                             \
         .task_core = MIXER_TASK_CORE,                               \
         .task_prio = MIXER_TASK_PRIO,                               \
         .stack_in_ext = true,                                         \
-    }
+        .profile = {\
+            .num_sources = mixer_NUM_SOURCES,\
+            .settings = {\
+                .gains = default_gains2,\
+                .enabled = default_enabled2,\
+            },\
+        },\
+    }\
 
-/**
-* @brief      Sets the downmix timeout.
-*
-* @param      self               audio element handle
-* @param      ticks_to_wait      input ringbuffer timeout
-* @param      index              The index of multi input ringbuffer.
-*/
-void mixer_set_input_rb_timeout(audio_element_handle_t self, int ticks_to_wait, int index);
+audio_element_handle_t mixer_init(mixer_cfg_t* config);
+int mixer_process(audio_element_handle_t self, char *in_buffer, int in_len);
+esp_err_t mixer_open(audio_element_handle_t self);
+esp_err_t mixer_close(audio_element_handle_t self);
+esp_err_t mixer_destroy(audio_element_handle_t self);
 
-/**
-* @brief      Sets the downmix input ringbuffer. refer to `ringbuf.h`
-*
-* @param      self      audio element handle
-* @param      rb        handle of ringbuffer
-* @param      index     The index of multi input ringbuffer.
-*/
+esp_err_t mixer_set_gain(audio_element_handle_t self, unsigned source_idx, float gain_db);
+esp_err_t mixer_set_settings(audio_element_handle_t self, mixer_settings profile);
+esp_err_t mixer_set_enable(audio_element_handle_t self, unsigned source_idx, bool enabled);
+
 void mixer_set_input_rb(audio_element_handle_t self, ringbuf_handle_t rb, int index);
 
-/**
-* @brief      Passes number of channels for output stream. Only supported mono and dual.
-*
-* @param      self         audio element handle
-* @param      output_type  down-mixer output type.
-*
-* @return
-*             ESP_OK
-*             ESP_FAIL
-*/
-esp_err_t mixer_set_output_type(audio_element_handle_t self, esp_downmix_output_type_t output_type);
-
-/**
-* @brief      Sets BYPASS, ON or OFF status of down-mixer.
-*
-* @param      self       audio element handle
-* @param      mode       down-mixer work mode.
-*
-* @return
-*             ESP_OK
-*             ESP_FAIL
-*/
-esp_err_t mixer_set_work_mode(audio_element_handle_t self, esp_downmix_work_mode_t mode);
-
-/**
-* @brief      Passes content of per channel output stream by down-mixer.
-*
-* @param      self       audio element handle
-* @param      out_ctx    content of output stream.
-*
-* @return
-*             ESP_OK
-*             ESP_FAIL
-*/
-esp_err_t mixer_set_out_ctx_info(audio_element_handle_t self, esp_downmix_out_ctx_type_t out_ctx);
-
-/**
-* @brief      Sets the sample rate and the number of channels of input stream to be processed.
-*
-* @param      self      audio element handle
-* @param      rate      sample rate of the input stream
-* @param      ch        number of channel(s) of the input stream
-* @param      index     The index of input stream. The index must be in [0, SOURCE_NUM_MAX - 1] range.
-*
-* @return
-*             ESP_OK
-*             ESP_FAIL
-*/
-esp_err_t mixer_set_source_stream_info(audio_element_handle_t self, int rate, int ch, int index);
-
-/**
-* @brief      Sets the audio gain to be processed.
-*
-* @param      self               audio element handle
-* @param      gain               the reset value of `gain`. The `gain` is an array of two elements.
-* @param      index              The index of input stream. The index must be in [0, SOURCE_NUM_MAX - 1] range.
-* @return
-*             ESP_OK
-*             ESP_FAIL
-*/
-esp_err_t mixer_set_gain_info(audio_element_handle_t self, float *gain, int index);
-
-/**
-* @brief      Sets the audio `transit_time` to be processed.
-*
-* @param      self                  audio element handle
-* @param      transit_time          the reset value of `transit_time`
-* @param      index                 The index of input stream. The index must be in [0, SOURCE_NUM_MAX - 1] range
-*
-* @return
-*             ESP_OK
-*             ESP_FAIL
-*/
-esp_err_t mixer_set_transit_time_info(audio_element_handle_t self, int transit_time, int index);
-
-/**
-* @brief      Initializes information of the source streams for downmixing.
-*
-* @param      self          audio element handle
-* @param      source_num    The information array of source streams
-*
-* @return
-*             ESP_OK
-*             ESP_FAIL
-*/
-esp_err_t source_info_init(audio_element_handle_t self, esp_downmix_input_info_t *source_num);
-
-/**
-* @brief      Initializes the Audio Element handle for downmixing.
-*
-* @param      config  the configuration
-*
-* @return     The initialized Audio Element handle
-*/
-audio_element_handle_t mixer_init(downmix_cfg_t *config);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+#endif // MIXER_H_

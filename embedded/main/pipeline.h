@@ -53,10 +53,17 @@ typedef struct audiyour_pipeline_a2dp {
     TaskHandle_t event_listener_task;
 } audiyour_pipeline_a2dp;
 
-void update_equalizer_gains(audiyour_pipeline_a2dp* audiyour_pipeline, int8_t equalizer_gains[10]);
+extern audiyour_pipeline_a2dp g_audiyour_pipeline;
+
+// void update_equalizer_gains(audiyour_pipeline_a2dp* audiyour_pipeline, int8_t equalizer_gains[10]);
+
+void pipeline_update_equalizer_gains(audiyour_pipeline_a2dp* audiyour_pipeline, float equalizer_gains[10]);
+void pipeline_update_equalizer_enable(audiyour_pipeline_a2dp* audiyour_pipeline, bool enabled);
+void pipeline_update_mixer_gain(audiyour_pipeline_a2dp* audiyour_pipeline, unsigned source_idx, float gain_db);
+void pipeline_update_mixer_enable(audiyour_pipeline_a2dp* audiyour_pipeline, unsigned source_idx, bool enabled);
 
 void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline);
-
+void audiyour_pipeline_a2dp_run(audiyour_pipeline_a2dp* audiyour_pipeline);
 void audiyour_pipeline_a2dp_deinit(audiyour_pipeline_a2dp* audiyour_pipeline);
 
 #ifdef __cplusplus

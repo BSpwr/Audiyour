@@ -54,8 +54,8 @@ class Equalizer(Qw.QWidget):
 
         for idx, band_w in enumerate(self.band_widgets):
             band_w.slider.blockSignals(True)
-            band_w.slider.setValue(int(gains[idx]))
-            band_w.update_db_value(int(gains[idx]))
+            band_w.slider.setValue(gains[idx])
+            band_w.update_db_value(gains[idx])
             band_w.slider.blockSignals(False)
         # self.set_enable_btn.blockSignals(True)
         # self.set_enable_btn.setChecked(status)
@@ -65,11 +65,19 @@ class Equalizer(Qw.QWidget):
         #     self.set_enable_btn.setText("Enable Equalizer")
         # self.set_enable_btn.blockSignals(False)
 
+        await self.parent().parent().bt_man.read_eq_enable()
+        set_enable = self.parent().parent().bt_man.eq_enable
+        self.set_enable_btn.blockSignals(True)
+        self.set_enable_btn.setChecked(set_enable)
+        self.set_enable_btn.blockSignals(False)
+
 
     def set_equalizer_enable(self):
         if self.set_enable_btn.isChecked():
+            asyncio.ensure_future(self.parent().parent().bt_man.write_eq_enable(True))
             self.set_enable_btn.setText("Disable Equalizer")
         else:
+            asyncio.ensure_future(self.parent().parent().bt_man.write_eq_enable(False))
             self.set_enable_btn.setText("Enable Equalizer")
 
 
@@ -84,7 +92,7 @@ class Equalizer(Qw.QWidget):
 
 
     async def do_band_update(self, band_num, dB):
-        await self.parent().parent().bt_man.write_eq_gain_index(band_num, int(dB))
+        await self.parent().parent().bt_man.write_eq_gain_index(band_num, dB)
         self.parent().parent().update_conn_status()
 
 
