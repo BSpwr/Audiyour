@@ -15,7 +15,7 @@ class Equalizer(Qw.QWidget):
         self.set_enable_btn.setCheckable(True)
         self.set_enable_btn.toggled.connect(self.set_equalizer_enable)
 
-        self.set_defaults_btn = Qw.QPushButton("Set Defaults")
+        self.set_defaults_btn = Qw.QPushButton("Reset")
         self.set_defaults_btn.clicked.connect(self.set_defaults)
 
         self.load_settings_btn = Qw.QPushButton("Load From Device")
@@ -57,7 +57,13 @@ class Equalizer(Qw.QWidget):
             band_w.slider.setValue(gains[idx])
             band_w.update_db_value(gains[idx])
             band_w.slider.blockSignals(False)
+        # self.set_enable_btn.blockSignals(True)
         # self.set_enable_btn.setChecked(status)
+        # if self.set_enable_btn.isChecked():
+        #     self.set_enable_btn.setText("Disable Equalizer")
+        # else:
+        #     self.set_enable_btn.setText("Enable Equalizer")
+        # self.set_enable_btn.blockSignals(False)
 
         await self.parent().parent().bt_man.read_eq_enable()
         set_enable = self.parent().parent().bt_man.eq_enable
