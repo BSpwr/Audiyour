@@ -4,15 +4,14 @@ import 'package:flutter_blue/flutter_blue.dart';
 import 'dart:typed_data';
 
 /*
-static const uint16_t GATTS_SERVICE_UUID_TEST                       = 0x00FF;
 static const uint16_t GATTS_CHAR_EQ_GAINS_VAL                       = 0xFF01;
+static const uint16_t GATTS_CHAR_EQ_ENABLE_VAL                      = 0xFF05;
 static const uint16_t GATTS_CHAR_MIXER_INPUT_GAINS_VAL              = 0xFF02;
 static const uint16_t GATTS_CHAR_MIXER_ENABLE_JACK_IN_VAL           = 0xFF03;
 static const uint16_t GATTS_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN_VAL = 0xFF04;
-static const uint16_t GATTS_CHAR_EQ_ENABLE_VAL                      = 0xFF05;
-static const uint16_t GATTS_CHAR_PROFILE_INDEX_VAL                  = 0xFF06;5
-static const uint16_t GATTS_CHAR_PROFILE_SAVE_VAL                   = 0xFF07;6
-static const uint16_t GATTS_CHAR_PROFILE_LOAD_VAL                   = 0xFF08;7
+static const uint16_t GATTS_CHAR_PROFILE_INDEX_VAL                  = 0xFF06;
+static const uint16_t GATTS_CHAR_PROFILE_SAVE_VAL                   = 0xFF07;
+static const uint16_t GATTS_CHAR_PROFILE_LOAD_VAL                   = 0xFF08;
 static const uint16_t GATTS_CHAR_OUTPUT_GAIN_VAL                    = 0xFF09;
  */
 
@@ -230,15 +229,15 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
     //Look for services and their characteristics and prints
     _services = await widget.device.discoverServices();
-    /*
+
       for (var i in _services){
       print('Service\n');
       print(i.uuid);
       print('\tChar\n');
       for (var j in i.characteristics){
-        print("\t$j.uuid");
+        print("\t${j.uuid}");
       }
-    }*/
+    }
 
     //Change MTU on device
     await widget.device.requestMtu(100); // I would await this regardless, set a timeout if you are concerned
@@ -795,11 +794,11 @@ class _MixerSlider extends State<MixerSlider> {
   _setSliderValue() {
     setState(() {
       //BluetoothCharacteristic characteristic = widget.service[0].characteristics[0];
-      if (double.parse(myController.text).roundToDouble() < -40.0) {
+      if (double.parse(myController.text) < -40.0) {
         widget.mixerGains[widget.index] = -40.0;
         myController.text = '-40.0';
       }
-      else if (double.parse(myController.text).roundToDouble() > 20.0) {
+      else if (double.parse(myController.text) > 20.0) {
         widget.mixerGains[widget.index] = 20.0;
         myController.text = '20.0';
       }
@@ -808,7 +807,7 @@ class _MixerSlider extends State<MixerSlider> {
       }
 
       //If services and gains are not empty, send to board as integers
-      if(mixerGainsInt.isNotEmpty && widget.service.isNotEmpty) {
+      if(widget.mixerGains.isNotEmpty && widget.service.isNotEmpty) {
         var valueFloat = Float32List(2);
         int j = 0;
         for(var gain  in widget.mixerGains){
