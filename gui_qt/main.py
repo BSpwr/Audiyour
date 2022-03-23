@@ -135,7 +135,7 @@ class MainUI(Qw.QWidget):
     async def load_profile(self):
         await self.bt_man.write_load_profile()
         while (await self.bt_man.read_load_profile()):
-            asyncio.sleep(0.1)
+            await asyncio.sleep(0.1)
         if self.bt_man.is_connected():
             asyncio.ensure_future(self.equalizer.load_settings())
             asyncio.ensure_future(self.mixer.load_settings())
