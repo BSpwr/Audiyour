@@ -590,14 +590,6 @@ class _EqualizerSlider extends State<EqualizerSlider> {
     return 1.0;
   }
 
-  /// Returns a float value (as a double) that approximates the double.
-  double roundableFloat(double doubleValue, int fractionalDigits) {
-    var valueFloat = Float32List (1);
-    valueFloat [0] = double.parse ("2.1");
-    var listOfBytes = valueFloat.buffer.asUint8List ();
-    return 1.0;
-  }
-
   //Function called by listener when myController changes
   _setSliderValue () async{
     setState(() {
