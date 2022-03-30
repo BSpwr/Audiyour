@@ -28,16 +28,22 @@
 #include "pipeline.h"
 #include "equalizer2.h"
 
+#include <time.h>
+
+clock_t time_before;
+
 static const char *TAG = "PIPELINE";
 
 audiyour_pipeline_a2dp g_audiyour_pipeline;
 
 void pipeline_update_equalizer_gains(audiyour_pipeline_a2dp* audiyour_pipeline, float equalizer_gains[10]) {
+    clock_t new_time = clock();
     ESP_LOGI(TAG, "Update_equalizer_gains");
-    if (audiyour_pipeline && audiyour_pipeline->equalizer) {
+    if (audiyour_pipeline && audiyour_pipeline->equalizer && (float)(new_time - time_before)/CLOCKS_PER_SEC >= 0.25) {
         for (int i = 0; i < 10; i++) {
             equalizer2_set_gain(audiyour_pipeline->equalizer, i, equalizer_gains[i]);
         }
+        time_before = clock();
     }
 }
 
@@ -51,6 +57,7 @@ void pipeline_update_equalizer_enable(audiyour_pipeline_a2dp* audiyour_pipeline,
 void pipeline_update_mixer_gain(audiyour_pipeline_a2dp* audiyour_pipeline, unsigned source_idx, float gain_db) {
     ESP_LOGI(TAG, "Update_mixer_gain");
     if (audiyour_pipeline && audiyour_pipeline->mixer) {
+        ESP_LOGI(TAG, "mixer value: %f", gain_db);
         mixer_set_gain(audiyour_pipeline->mixer, source_idx, gain_db);
     }
 }
@@ -244,6 +251,8 @@ void audiyour_pipeline_a2dp_init(audiyour_pipeline_a2dp* audiyour_pipeline) {
     audio_pipeline_set_listener(audiyour_pipeline->pipeline_bt_read, audiyour_pipeline->evt);
     audio_pipeline_set_listener(audiyour_pipeline->pipeline, audiyour_pipeline->evt);
     // audio_event_iface_set_listener(esp_periph_set_get_event_iface(audiyour_pipeline->periph_set), audiyour_pipeline->evt);
+
+    time_before = clock();
 }
 
 void audiyour_pipeline_a2dp_run(audiyour_pipeline_a2dp* audiyour_pipeline) {
