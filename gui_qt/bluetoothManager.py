@@ -138,6 +138,8 @@ class BluetoothManager:
             return
 
         value = await self.client.read_gatt_char(self.PROFILE_LOAD_CHARACTERISTIC)
+        #print("This is read_load_profile")
+        #print(value[0])
         return bool(int.from_bytes([value[0]], "little", signed=False))
 
     async def write_eq_gains(self, new_gains):
@@ -352,6 +354,9 @@ class BluetoothManager:
         self._last_call = this_call
 
         bool_one = (1).to_bytes(1, "little", signed=False)
+
+        #print("This is write_load_profile")
+        #print(bool_one)
 
         k = await self.client.write_gatt_char(self.PROFILE_LOAD_CHARACTERISTIC, bool_one, response=True)
 

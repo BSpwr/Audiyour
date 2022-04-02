@@ -48,6 +48,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
   String dropdownValue = 'One';
   List<int> profile = [0];
   List<int> one = [1];
+  List<int> freq = [31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+  List<String> source = ['3.5mm Jack', 'Bluetooth'];
+  List<int> statusBT = [1];
+  List<int> statusAUX = [1];
+  List<int> statusEQ = [1];
 
   //Initializes state for widget
   @override
@@ -80,7 +85,77 @@ class _DeviceScreenState extends State<DeviceScreen> {
     }
   }
 
-  setBleConnectionState(BluetoothDeviceState event) {
+  Future<bool> connect() async {
+    Future<bool>? returnValue;
+
+    setState(()  {
+      stateText = 'Connecting';
+    });
+
+    await widget.device.connect(autoConnect: false).timeout(
+        const Duration(milliseconds: 10000),
+        onTimeout: () {
+          returnValue = Future.value(false);
+          debugPrint('timeout failed');
+          setBleConnectionState(BluetoothDeviceState.disconnected);
+        }).then((data) {
+      if (returnValue == null) {
+        debugPrint('connection successful');
+        returnValue = Future.value(true);
+      }
+    });
+
+    //Look for services and their characteristics and prints
+    _services = await widget.device.discoverServices();
+    await Future.delayed(const Duration(microseconds: 100));
+
+    for (var i in _services){
+      print('Service\n');
+      print(i.uuid);
+      print('\tChar\n');
+      for (var j in i.characteristics){
+        print("\t${j.uuid}");
+      }
+    }
+
+    //Change MTU on device
+    await widget.device.requestMtu(100); // I would await this regardless, set a timeout if you are concerned
+    await Future.delayed(const Duration(seconds: 1));
+    var mtuChanged = Completer<void>();
+    var mtuStreamSubscription = widget.device.mtu.listen((mtu) {
+      if(mtu == 100) mtuChanged.complete();
+    });
+    //https://github.com/pauldemarco/flutter_blue/issues/902
+    await mtuChanged.future; // set timeout and catch exception
+    mtuStreamSubscription.cancel();
+
+    loadEqualizerGainsFromDevice();
+    loadMixerGainsFromDevice();
+
+    //print('Float value sent by board ${widget.equalizerGains}');
+
+    setState((){});
+    return returnValue ?? Future.value(false);
+  }
+
+  void disconnect() async {
+    try {
+      setState(() {
+        stateText = 'Disconnecting';
+      });
+
+      sendEqualizerGainsToDevice();
+      sendMixerGainsToDevice();
+
+      await widget.device.disconnect();
+      print('#################################### Disconnected ####################################');
+    }
+    catch (e) {
+      print('#################################### Could not Disconnect ####################################');
+    }
+  }
+
+  void setBleConnectionState(BluetoothDeviceState event) {
     switch (event) {
       case BluetoothDeviceState.disconnected:
         connected = false;
@@ -105,7 +180,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     setState(() {});
   }
 
-  iconPress (){
+  void iconPress() {
     if (deviceState == BluetoothDeviceState.connected) {
       disconnect();
     } else if (deviceState == BluetoothDeviceState.disconnected) {
@@ -113,9 +188,37 @@ class _DeviceScreenState extends State<DeviceScreen> {
     }
   }
 
-  void loadEqualizerGainsFromDevice () async {
+  //Sends equalizer gain values to the device
+  void sendEqualizerGainsToDevice() async {
+    var floatList = Float32List(10);
+    int j = 0;
+    for(var gain in widget.equalizerGains){
+      floatList[j] = gain;
+      j++;
+    }
+    var listOfBytes = floatList.buffer.asUint8List();
+    _services[2].characteristics[0].write(listOfBytes, withoutResponse: false);
+    await Future.delayed(const Duration(milliseconds: 100));
+  }
+
+  //Sends mixer gain values to the device
+  void sendMixerGainsToDevice() async {
+    var floatList = Float32List(2);
+    int j = 0;
+    for(var gain in widget.mixerGains){
+      floatList[j] = gain;
+      j++;
+    }
+    var listOfBytes = floatList.buffer.asUint8List();
+    _services[2].characteristics[2].write(listOfBytes, withoutResponse: false);
+    await Future.delayed(const Duration(milliseconds: 100));
+  }
+
+  //Loads equalizer gain values to the device
+  void loadEqualizerGainsFromDevice() async {
     //Read values of Equalizer and Mixer gains
     List<int> tempGain = await _services[2].characteristics[0].read();
+    await Future.delayed(const Duration(milliseconds: 100));
 
     //Converts bytes received to float32
     final bytes = Uint8List.fromList(tempGain);
@@ -132,9 +235,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
     setState(() {});
   }
 
-  void loadMixerGainsFromDevice () async {
+  //Loads mixer gain values to the device
+  void loadMixerGainsFromDevice() async {
     //Read values of Equalizer and Mixer gains
     List<int> tempGain = await _services[2].characteristics[2].read();
+    await Future.delayed(const Duration(milliseconds: 100));
 
     //Converts bytes received to float32
     final bytes = Uint8List.fromList(tempGain);
@@ -150,177 +255,146 @@ class _DeviceScreenState extends State<DeviceScreen> {
     setState(() {});
   }
 
+  //Loads bluetooth input status
+  void loadBluetoothInputStatus() async {
+    statusBT = await _services[2].characteristics[4].read();
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    setState(() {
+      if (statusBT[0] == 1) {
+        enableBT = true;
+      }
+      else {
+        enableBT = false;
+      }
+    });
+  }
+
+  //Loads AUX input status
+  void loadAUXInputStatus() async {
+    statusAUX = await _services[2].characteristics[3].read();
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    setState(() {
+      if (statusAUX[0] == 1) {
+        enableAUX = true;
+      }
+      else {
+        enableAUX = false;
+      }
+    });
+  }
+
+  //Loads profile values from device
   void loadProfile() async {
-    /*
-      await self.bt_man.write_load_profile()
-      while (await self.bt_man.read_load_profile()):
-          asyncio.sleep(0.1)
-      if self.bt_man.is_connected():
-          asyncio.ensure_future(self.equalizer.load_settings())
-          asyncio.ensure_future(self.mixer.load_settings())
-     */
+    //Writes one to load profile characteristic
     _services[2].characteristics[7].write(one, withoutResponse: false);
-    List<int> temp = [0];
-    while (temp[0] != 1){
+    List<int> temp = [1];
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    print("This is the received: ${temp[0]}");
+    while (temp[0] == 1){
+      print("About to receive");
       temp = await _services[2].characteristics[7].read();
       await Future.delayed(const Duration(milliseconds: 100));
+      print("This is the received delayed: ${temp[0]}");
     }
+    print("Read values");
+
+    //Loads gain values
     loadEqualizerGainsFromDevice();
     loadMixerGainsFromDevice();
+    loadBluetoothInputStatus();
+    loadAUXInputStatus();
+
+    loadEqualizerGainsFromDevice();
+    loadMixerGainsFromDevice();
+    loadBluetoothInputStatus();
+    loadAUXInputStatus();
   }
 
-  Future<bool> connect() async {
-    /*    Future<bool>? returnValue;
+  //Saves current profile values in device
+  void saveProfile() async {
+
+
+    _services[2].characteristics[6].write(one, withoutResponse: false);
+    await Future.delayed(const Duration(milliseconds: 100));
+  }
+
+  //Enables/Disables the equalizer
+  void equalizerToggle() async {
     setState(() {
-      stateText = 'Connecting';
-
-    });*/
-    /*    try {
-      await widget.device.connect(timeout: const Duration(seconds: 10));
-    } catch (e) {
-      if (e != 'already_connected') {
-        rethrow;
+      if (enableEQ) {
+        statusEQ[0] = 0;
+        _services[2].characteristics[1].write(statusEQ);
+      } else {
+        statusEQ[0] = 1;
+        _services[2].characteristics[1].write(statusEQ);
       }
-    } finally {
-      _services = await widget.device.discoverServices();
-      List<int> tempGain = await _services[2].characteristics[0].read();
-
-      //Converts casts values to int8
-      for (int i = 0; i<10 ;i++) {
-        int temp = tempGain[i].toSigned(8);
-        widget.equalizerGains[i] = temp.toDouble();
-      }
-      List <int> gainInts = widget.mixerGains.map((e) => e.toInt()).toList();*/
-    /*print('Below is the value read from device');
-      print(tempGain);
-      //widget.equalizerGains = tempGain.map((e) => e.toDouble()).toList();
-      print('Below is the value read from device in double');
-      print(widget.equalizerGains);*/
-    /*    for (BluetoothService service in _services) {
-      print('Service');
-      print(service.uuid.toString());
-      print('Char');
-      for (BluetoothCharacteristic characteristic in service.characteristics) {
-        print(characteristic.uuid.toString());
-      }
-    }*/
-
-    Future<bool>? returnValue;
-
-    setState(()  {
-      stateText = 'Connecting';
-      //_connectedDevice = widget.device;
-      //_services[2].characteristics[2].write(statusAUX);
-      //_services[2].characteristics[2].write(statusAUX);
+      enableEQ = !enableEQ;
     });
-
-    await widget.device.connect(autoConnect: false).timeout(
-        const Duration(milliseconds: 10000),
-        onTimeout: () {
-          returnValue = Future.value(false);
-          debugPrint('timeout failed');
-          setBleConnectionState(BluetoothDeviceState.disconnected);
-        }).then((data) {
-      if (returnValue == null) {
-        debugPrint('connection successful');
-        returnValue = Future.value(true);
-      }
-    });
-
-    //Look for services and their characteristics and prints
-    _services = await widget.device.discoverServices();
-
-      for (var i in _services){
-      print('Service\n');
-      print(i.uuid);
-      print('\tChar\n');
-      for (var j in i.characteristics){
-        print("\t${j.uuid}");
-      }
-    }
-
-    //Change MTU on device
-    await widget.device.requestMtu(100); // I would await this regardless, set a timeout if you are concerned
-    await Future.delayed(const Duration(seconds: 1));
-    var mtuChanged = Completer<void>();
-    var mtuStreamSubscription = widget.device.mtu.listen((mtu) {
-      if(mtu == 100) mtuChanged.complete();
-    });
-    //https://github.com/pauldemarco/flutter_blue/issues/902
-    await mtuChanged.future; // set timeout and catch exception
-    mtuStreamSubscription.cancel();
-
-    //Read values of Equalizer and Mixer gains
-    List<int> tempEqualizerGains = await _services[2].characteristics[0].read();
-    List<int> tempMixerGains = await _services[2].characteristics[2].read();
-
-    //Converts equalizer gains from uint8 to doubles
-    final bytes = Uint8List.fromList(tempEqualizerGains);
-    //print("This is the bytes received from board $bytes");
-    final byteData = ByteData.sublistView(bytes);
-    var j = 0;
-    //https://stackoverflow.com/questions/67366326/how-to-convert-a-byte-array-to-a-double-float-value-in-dart
-    for (var i = 0; i < byteData.lengthInBytes; i += 4) {
-      double value = byteData.getFloat32(i, Endian.little);
-      widget.equalizerGains[j++] = value;
-    }
-
-    //Converts mixer gains from uint8 to doubles
-    final bytes1 = Uint8List.fromList(tempMixerGains);
-    //print("This is the bytes received from board $bytes");
-    final byteData1 = ByteData.sublistView(bytes1);
-    j = 0;
-    //https://stackoverflow.com/questions/67366326/how-to-convert-a-byte-array-to-a-double-float-value-in-dart
-    for (var i = 0; i < byteData1.lengthInBytes; i += 4) {
-      double value = byteData1.getFloat32(i, Endian.little);
-      widget.mixerGains[j++] = value;
-    }
-
-    //print('Float value sent by board ${widget.equalizerGains}');
-
-    setState((){});
-    return returnValue ?? Future.value(false);
   }
 
-  void disconnect() async{
-    try {
-      setState(() {
-        stateText = 'Disconnecting';
-      });
-
-      //Sends current gain values from mixer and equalizer to device one last time
-      var valueFloat1 = Float32List(10);
-      int j = 0;
-      for(var gain in widget.equalizerGains){
-        valueFloat1[j] = gain;
-        j++;
+  //Enables/Disables the AUX input
+  void auxInputToggle() async {
+    setState(() {
+      if (enableAUX) {
+        statusAUX[0] = 0;
+        _services[2].characteristics[3].write(statusAUX);
+      } else {
+        statusAUX[0] = 1;
+        _services[2].characteristics[3].write(statusAUX);
       }
-      var listOfBytes1 = valueFloat1.buffer.asUint8List();
-      _services[2].characteristics[0].write(listOfBytes1, withoutResponse: false);
-
-      var valueFloat2 = Float32List(2);
-      j = 0;
-      for(var gain  in widget.mixerGains){
-        valueFloat2[j] = gain;
-        j++;
-      }
-      var listOfBytes = valueFloat2.buffer.asUint8List();
-      _services[2].characteristics[2].write(listOfBytes, withoutResponse: false);
-
-
-      await widget.device.disconnect();
-      print('#################################### Disconnected ####################################');
-    }
-    catch (e) {
-      print('#################################### Could not Disconnect ####################################');
-    }
+      enableAUX = !enableAUX;
+    });
+    await Future.delayed(const Duration(milliseconds: 100));
   }
 
-  List<int> freq = [31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
-  List<String> source = ['3.5mm Jack', 'Bluetooth'];
-  List<int> statusBT = [1];
-  List<int> statusAUX = [1];
-  List<int> statusEQ = [1];
+  //Enables/Disables the bluetooth input
+  void bluetoothInputToggle() async {
+    setState(() {
+      if (enableBT) {
+        statusBT[0] = 0;
+        _services[2].characteristics[4].write(statusBT);
+      } else {
+        statusBT[0] = 1;
+        _services[2].characteristics[4].write(statusBT);
+      }
+      enableBT = !enableBT;
+    });
+    await Future.delayed(const Duration(milliseconds: 100));
+  }
+
+  //Called when the values are updated in the dropdown menu
+  void updateProfile(String? newValue) async {
+    dropdownValue = newValue!;
+    //Sends current profile choice to board
+    if (newValue == 'One'){
+      profile[0] = 0;
+    }
+    else if (newValue == 'Two'){
+      profile[0] = 1;
+    }
+    else if (newValue == 'Three'){
+      profile[0] = 2;
+    }
+    else if (newValue == 'Four'){
+      profile[0] = 3;
+    }
+    else if (newValue == 'Five'){
+      profile[0] = 4;
+    }
+
+    //Sends the updated profile to the device
+    _services[2].characteristics[5].write(profile, withoutResponse: false);
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    _services[2].characteristics[5].write(profile, withoutResponse: false);
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    //Loads the respective values
+    loadProfile();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -349,7 +423,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           disconnect();
                         } else if (deviceState == BluetoothDeviceState.disconnected) {
                           connect();
-                        } else {}
+                        }
                       },
                       child: Text(connectButtonText)
                   ),
@@ -372,28 +446,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     ),
                     onChanged: (String? newValue) {
                       setState(() {
-                        dropdownValue = newValue!;
-                        //Sends current profile choice to board
-                        if (newValue == 'One'){
-                          profile[0] = 0;
-                          _services[2].characteristics[5].write(profile);
-                        }
-                        else if (newValue == 'Two'){
-                          profile[0] = 1;
-                          _services[2].characteristics[5].write(profile);
-                        }
-                        else if (newValue == 'Three'){
-                          profile[0] = 2;
-                          _services[2].characteristics[5].write(profile);
-                        }
-                        else if (newValue == 'Four'){
-                          profile[0] = 3;
-                          _services[2].characteristics[5].write(profile);
-                        }
-                        else if (newValue == 'Five'){
-                          profile[0] = 4;
-                          _services[2].characteristics[5].write(profile);
-                        }
+                        updateProfile(newValue);
                       });
                     },
                     items: <String>['One', 'Two', 'Three', 'Four', 'Five']
@@ -423,7 +476,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                       child: const Text('Save Profile'),
                       onPressed: () {
-                        _services[2].characteristics[6].write(one, withoutResponse: false);
+                        saveProfile();
                       }
                   ),
                   const Spacer(),
@@ -442,16 +495,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                       child: enableEQ ? const Text('Disable Equalizer') : const Text('Enable Equalizer'),
                       onPressed: () {
-                        setState(() {
-                          if (enableEQ) {
-                            statusEQ[0] = 0;
-                            _services[2].characteristics[1].write(statusEQ);
-                          } else {
-                            statusEQ[0] = 1;
-                            _services[2].characteristics[1].write(statusEQ);
-                          }
-                          enableEQ = !enableEQ;
-                        });
+                        equalizerToggle();
                       }
                   ),
                   const Spacer(),
@@ -538,16 +582,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                       child: enableAUX ? const Text('Disable AUX Input') : const Text('Enable AUX Input'),
                       onPressed: () {
-                        setState(() {
-                          if (enableAUX) {
-                            statusAUX[0] = 0;
-                            _services[2].characteristics[3].write(statusAUX);
-                          } else {
-                            statusAUX[0] = 1;
-                            _services[2].characteristics[3].write(statusAUX);
-                          }
-                          enableAUX = !enableAUX;
-                        });
+                        auxInputToggle();
                       }
                   ),
                   const Spacer(),
@@ -558,16 +593,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                       child: enableBT ? const Text('Disable Bluetooth Input') : const Text('Enable Bluetooth Input'),
                       onPressed: () {
-                        setState(() {
-                          if (enableBT) {
-                            statusBT[0] = 0;
-                            _services[2].characteristics[4].write(statusBT);
-                          } else {
-                            statusBT[0] = 1;
-                            _services[2].characteristics[4].write(statusBT);
-                          }
-                          enableBT = !enableBT;
-                        });
+                        bluetoothInputToggle();
                       }
                   ),
                   const Spacer(),
