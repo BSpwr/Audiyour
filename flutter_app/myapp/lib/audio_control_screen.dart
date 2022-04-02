@@ -398,11 +398,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     },
                     items: <String>['One', 'Two', 'Three', 'Four', 'Five']
                         .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
                   ),
                   const Spacer(),
                   ElevatedButton(
