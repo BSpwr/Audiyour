@@ -112,25 +112,67 @@ class EqualizerBand(Qw.QWidget):
             Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Expanding)
         self.slider.valueChanged.connect(lambda val: self.update_db_value(val))
 
-        self.db_value_label = Qw.QLabel("0 dB")
-        self.db_value_label.setFixedWidth(40)
-        self.db_value_label.setAlignment(Qc.Qt.AlignVCenter)
-        self.db_value_label.setSizePolicy(
-            Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
-
         self.freq_text_box = Qw.QLabel(self.center_freq, parent=self)
         self.freq_text_box.setAlignment(Qc.Qt.AlignVCenter)
         self.freq_text_box.setSizePolicy(
             Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
 
-        self.layout = Qw.QVBoxLayout()
-        self.layout.addWidget(self.db_value_label)
+        self.top = TopEqualizerBand(self.slider)
+
+        #self.layout.addWidget(self.gain_box_text)
+        self.layout = Qw.QVBoxLayout(self)
+        self.layout.addWidget(self.top)
         self.layout.addWidget(self.slider)
         self.layout.addWidget(self.freq_text_box)
-        self.layout.setAlignment(Qc.Qt.AlignVCenter)
+        self.layout.setAlignment(Qc.Qt.AlignLeft)
         self.setLayout(self.layout)
         self.show()
-  
 
     def update_db_value(self, value: int):
-        self.db_value_label.setText(f'{value} dB')
+        #self.db_value_label.setText(f'{value} dB')
+        self.top.db_box.setText(f'{value}')
+        #self.slider.setValue(int(value))
+
+    
+
+class TopEqualizerBand(Qw.QWidget):
+    def __init__(self, slider: Qw.QWidget, parent=None):
+        super().__init__(parent)
+        self.slider = slider
+
+        #Added box for gain values
+        self.db_box = Qw.QLineEdit("0")
+        self.db_box.setFixedWidth(30)
+        self.db_box.setAlignment(Qc.Qt.AlignLeft)
+        self.db_box.textChanged.connect(lambda val: self.update_box(val, self.slider))
+
+        #Added box for db
+        self.db_value_label = Qw.QLabel("dB")
+        self.db_value_label.setFixedWidth(15)
+        self.db_value_label.setAlignment(Qc.Qt.AlignLeft)
+        self.db_value_label.setSizePolicy(
+            Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
+
+        self.layout = Qw.QHBoxLayout(self)
+        self.layout.addWidget(self.db_box)
+        self.layout.addWidget(self.db_value_label)
+        self.layout.setAlignment(Qc.Qt.AlignLeft)
+        self.setLayout(self.layout)
+        self.show()
+        
+    def update_box(self, value: str, slider: Qw.QWidget):
+        try:
+            if (len(value) == 0):
+                self.slider.setValue(0)
+                self.db_box.setText("")
+            elif (int(value) < -20):
+                self.slider.setValue(-20)
+                self.db_box.setText("-20")
+            elif (int(value) > 10):
+                self.slider.setValue(10)
+                self.db_box.setText("10")
+            else:
+                self.slider.setValue(int(value))
+            print(int(value))
+        except ValueError:
+            print("Not a value")
