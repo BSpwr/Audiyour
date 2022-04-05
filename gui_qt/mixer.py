@@ -38,6 +38,7 @@ class Mixer(Qw.QWidget):
             self.bands_layout.addWidget(band_w)
 
         self.layout = Qw.QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addLayout(self.toolbar_layout)
         self.layout.addLayout(self.bands_layout)
 
@@ -135,6 +136,7 @@ class MixerBand(Qw.QWidget):
             Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
 
         self.layout = Qw.QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addWidget(self.top)
         self.layout.addWidget(self.slider)
         self.layout.addWidget(self.label_text_box)

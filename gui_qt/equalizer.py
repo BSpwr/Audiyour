@@ -36,6 +36,7 @@ class Equalizer(Qw.QWidget):
             self.bands_layout.addWidget(band_w)
 
         self.layout = Qw.QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addLayout(self.toolbar_layout)
         self.layout.addLayout(self.bands_layout)
 
@@ -117,6 +118,7 @@ class EqualizerBand(Qw.QWidget):
 
         #self.layout.addWidget(self.gain_box_text)
         self.layout = Qw.QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addWidget(self.top)
         self.layout.addWidget(self.slider)
         self.layout.addWidget(self.freq_text_box)

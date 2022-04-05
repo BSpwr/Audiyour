@@ -56,6 +56,7 @@ class MainUI(Qw.QWidget):
 
         self.devices = {}
 
+        # Connection status interactables
         self.scan = Qw.QPushButton('Scan')
         self.scan.clicked.connect(lambda: asyncio.ensure_future(self.update_devices()))
 
@@ -73,6 +74,23 @@ class MainUI(Qw.QWidget):
         self.conn_status_layout.addWidget(self.device_sel)
         self.conn_status_layout.addWidget(self.check_conn_label)
         self.conn_status_layout.addWidget(self.disconnect_btn)
+
+        # Device renaming interactables
+        self.device_name_box = Qw.QLineEdit()
+        self.device_name_box.setMaxLength(32)
+        self.device_name_box.setFixedWidth(300)
+        self.device_name_box.setAlignment(Qc.Qt.AlignLeft)
+        
+        self.rename_btn = Qw.QPushButton('Rename Device (Restarts Device)')
+        self.rename_btn.clicked.connect(lambda: asyncio.ensure_future(self.rename_device(self.device_name_box.text())))
+
+        self.device_name_layout = Qw.QHBoxLayout()
+        self.device_name_layout.addWidget(self.device_name_box)
+        self.device_name_layout.addWidget(self.rename_btn)
+
+        self.conn_combined_layout = Qw.QVBoxLayout()
+        self.conn_combined_layout.addLayout(self.conn_status_layout)
+        self.conn_combined_layout.addLayout(self.device_name_layout)
 
         self.NUM_PROFILES = 5
         self.profile_sel = ProfileComboBox(self.NUM_PROFILES, parent=self)
@@ -94,7 +112,7 @@ class MainUI(Qw.QWidget):
         self.profile_layout.addWidget(self.load_settings_btn)
 
         self.conn_group = Qw.QGroupBox("Connection")
-        self.conn_group.setLayout(self.conn_status_layout)
+        self.conn_group.setLayout(self.conn_combined_layout)
 
         self.profile_group = Qw.QGroupBox("Profile")
         self.profile_group.setLayout(self.profile_layout)
@@ -169,6 +187,9 @@ class MainUI(Qw.QWidget):
         else:
             self.check_conn_label.setText("Device Disconnected ✖️")
         pass
+
+    async def rename_device(self, name):
+        await self.bt_man.rename_device(name)
 
 
 class DeviceComboBox(Qw.QComboBox):
