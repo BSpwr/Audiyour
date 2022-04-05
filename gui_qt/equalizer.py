@@ -18,13 +18,9 @@ class Equalizer(Qw.QWidget):
         self.set_defaults_btn = Qw.QPushButton("Reset")
         self.set_defaults_btn.clicked.connect(self.set_defaults)
 
-        self.load_settings_btn = Qw.QPushButton("Load From Device")
-        self.load_settings_btn.clicked.connect(lambda: asyncio.ensure_future(self.load_settings()))
-
         self.toolbar_layout = Qw.QHBoxLayout()
         self.toolbar_layout.addWidget(self.set_enable_btn)
         self.toolbar_layout.addWidget(self.set_defaults_btn)
-        self.toolbar_layout.addWidget(self.load_settings_btn)
 
         self.bands_layout = Qw.QHBoxLayout()
 
