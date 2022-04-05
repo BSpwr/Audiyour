@@ -70,6 +70,25 @@ class BluetoothManager:
         return await self.scanner.discover(timeout=4)
 
 
+    async def rename_device(self, name):
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        this_call = datetime.now()
+
+        if self._last_call is not None:
+            time_since_last_call = this_call - self._last_call
+            if time_since_last_call < self._wait:
+                return
+
+        self._last_call = this_call
+
+        name_byte_string = bytes(name, 'ascii')
+
+        k = await self.client.write_gatt_char(self.EQUALIZER_ENABLE_CHARACTERISTIC, name_byte_string, response=True)
+
+
     async def read_eq_gains(self):
         await self.connect()
         if self.client is None or not self.client.is_connected:
