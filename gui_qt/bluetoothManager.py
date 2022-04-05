@@ -18,6 +18,7 @@ class BluetoothManager:
         self.PROFILE_INDEX_CHARACTERISTIC = '0000ff06-0000-1000-8000-00805f9b34fb'
         self.PROFILE_SAVE_CHARACTERISTIC = '0000ff07-0000-1000-8000-00805f9b34fb'
         self.PROFILE_LOAD_CHARACTERISTIC = '0000ff08-0000-1000-8000-00805f9b34fb'
+        self.DEVICENAME_CHARACTERISTIC = '0000ff09-0000-1000-8000-00805f9b34fb'
 
         self.eq_gains: list[float] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.eq_enable = False
@@ -86,7 +87,7 @@ class BluetoothManager:
 
         name_byte_string = bytes(name, 'ascii')
 
-        k = await self.client.write_gatt_char(self.EQUALIZER_ENABLE_CHARACTERISTIC, name_byte_string, response=True)
+        k = await self.client.write_gatt_char(self.DEVICENAME_CHARACTERISTIC, name_byte_string, response=True)
 
 
     async def read_eq_gains(self):

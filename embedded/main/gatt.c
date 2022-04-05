@@ -108,7 +108,8 @@ static const uint16_t GATTS_CHAR_EQ_ENABLE_VAL                      = 0xFF05;
 static const uint16_t GATTS_CHAR_PROFILE_INDEX_VAL                  = 0xFF06;
 static const uint16_t GATTS_CHAR_PROFILE_SAVE_VAL                   = 0xFF07;
 static const uint16_t GATTS_CHAR_PROFILE_LOAD_VAL                   = 0xFF08;
-static const uint16_t GATTS_CHAR_OUTPUT_GAIN_VAL                    = 0xFF09;
+static const uint16_t GATTS_CHAR_DEVICENAME_VAL                     = 0xFF09;
+static const uint16_t GATTS_CHAR_OUTPUT_GAIN_VAL                    = 0xFF0A;
 
 static const uint16_t primary_service_uuid         = ESP_GATT_UUID_PRI_SERVICE;
 static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
@@ -129,6 +130,7 @@ static int8_t temp_output_gain         = 0x0;
 static uint8_t temp_current_profile_idx = 0x0;
 static bool temp_current_profile_load = 0x0;
 static bool temp_current_profile_save = 0x0;
+static device_name_t temp_device_name;
 
 /* Full Database Description - Used to add attributes into the database */
 static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
@@ -214,6 +216,15 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     [IDX_CHAR_PROFILE_LOAD_VAL]  =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_PROFILE_LOAD_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_current_profile_load), (uint8_t *)&temp_current_profile_load}},
+
+    /* Characteristic Declaration */
+    [IDX_CHAR_DEVICENAME]      =
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
+      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write}},
+    /* Characteristic Value */
+    [IDX_CHAR_DEVICENAME_VAL]  =
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_DEVICENAME_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_device_name), (uint8_t *)&temp_device_name}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_OUTPUT_GAIN]      =
@@ -349,7 +360,7 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
 {
     switch (event) {
         case ESP_GATTS_REG_EVT:{
-            esp_err_t set_dev_name_ret = esp_ble_gap_set_device_name(BT_DEVICE_NAME);
+            esp_err_t set_dev_name_ret = esp_ble_gap_set_device_name(g_device_name.name);
             if (set_dev_name_ret){
                 ESP_LOGE(GATT_TAG, "set device name failed, error code = %x", set_dev_name_ret);
             }
@@ -450,6 +461,15 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     rsp.attr_value.len = 1;
 
                     memcpy(rsp.attr_value.value, &g_profiles_load_needed[g_profile_idx], 1);
+                    esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
+                            ESP_GATT_OK, &rsp);
+            } else if (gatt_handle_table[IDX_CHAR_DEVICENAME_VAL] == param->read.handle) {
+                    esp_gatt_rsp_t rsp;
+                    memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
+                    rsp.attr_value.handle = param->read.handle;
+                    rsp.attr_value.len = MAX_DEVICENAME_LEN + 1;
+
+                    memcpy(rsp.attr_value.value, &g_device_name.name, rsp.attr_value.len);
                     esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
                             ESP_GATT_OK, &rsp);
             } else if (gatt_handle_table[IDX_CHAR_OUTPUT_GAIN_VAL] == param->read.handle) {
@@ -611,6 +631,26 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                         else 
                             esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_INVALID_CFG, NULL);
                     }
+                } else if (gatt_handle_table[IDX_CHAR_DEVICENAME_VAL] == param->write.handle) {
+                    bool data_valid = param->write.len <= MAX_DEVICENAME_LEN;
+
+                    if (data_valid) {
+                        memcpy(temp_device_name.name, param->write.value, param->write.len);
+                    }
+
+                    /* send response when param->write.need_rsp is true*/
+                    if (param->write.need_rsp){
+                        if (data_valid)
+                            esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
+                        else 
+                            esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_INVALID_CFG, NULL);
+                    }
+
+                    if (data_valid) {
+                        // Reboots board after saving new device name to filesystem
+                        handle_device_name_change(&temp_device_name);
+                    }
+
                 } else if (gatt_handle_table[IDX_CHAR_OUTPUT_GAIN_VAL] == param->write.handle) {
                     bool data_valid = param->write.len == 1;
 

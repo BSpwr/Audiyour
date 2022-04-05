@@ -1,6 +1,9 @@
 #include "profile.h"
 #include "pipeline.h"
 #include "esp_log.h"
+#include "esp_bt_device.h"
+
+device_name_t g_device_name;
 
 size_t g_profile_idx = 0;
 profile* g_profiles[MAX_NUM_PROFILES];
@@ -14,6 +17,8 @@ static const esp_vfs_littlefs_conf_t littlefs_conf = {
     .format_if_mount_failed = true,
     .dont_mount = false,
 };
+
+static const char* devicename_filename = "/littlefs/devicename.bin";
 
 static const char* profile_filename = "/littlefs/profiles.bin";
 
@@ -49,7 +54,7 @@ void profile_writeback_task_delete() {
     profile_writeback_task_handle = NULL;
 }
 
-void profile_writeback_task() {    
+void profile_writeback_task() {
     while (true) {
         for (size_t i = 0; i < MAX_NUM_PROFILES; ++i) {
             if (g_profiles_save_needed[i]) {
@@ -100,7 +105,6 @@ void profile_update_equalizer_enable(bool enabled) {
 }
 
 void profile_update_mixer_gain(unsigned source_idx, float gain_db) {
-    ESP_LOGI(TAG, "hrggg: %d", (int)g_profiles[g_profile_idx]->mixer.settings.gains);
     g_profiles[g_profile_idx]->mixer.settings.gains[source_idx] = gain_db;
     pipeline_update_mixer_gain(&g_audiyour_pipeline, source_idx, gain_db);
 }
@@ -208,9 +212,6 @@ void fs_save_current_profile_index(size_t current_profile) {
     ESP_LOGI(TAG, "saving current profile index: %d", current_profile);
     FILE *file = fopen(profile_filename, "r+");
 
-    profile default_p = DEFAULT_PROFILE();
-    size_t data_size = profile_size(&default_p);
-
     fwrite(&current_profile, sizeof(size_t), 1, file);
 
     fclose(file);
@@ -279,7 +280,7 @@ void fs_load_profiles(profile **profiles, size_t *current_profile, size_t num_pr
 }
 
 void fs_profiles_init(size_t num_profiles) {
-    ESP_LOGI(TAG, "initializing profiles");
+    ESP_LOGI(TAG, "initializing profiles in filesystem");
     FILE *file = fopen(profile_filename, "w");
 
     profile default_p = DEFAULT_PROFILE();
@@ -297,6 +298,55 @@ void fs_profiles_init(size_t num_profiles) {
     free(serialized);
     
     fclose(file);
+}
+
+void fs_devicename_load(device_name_t* device_name) {
+    ESP_LOGI(TAG, "loading device name from filesystem");
+    FILE *file;
+
+    if ((file = fopen(devicename_filename, "r"))) {
+        fread(device_name, sizeof(device_name_t), 1, file);
+        fclose(file);
+    } else {
+        // Initialize file
+        fs_devicename_init();
+        fs_devicename_load(device_name);
+    }
+}
+
+void fs_devicename_save(device_name_t* device_name) {
+    ESP_LOGI(TAG, "saving device name in filesystem");
+    FILE *file = fopen(devicename_filename, "w");
+
+    fwrite(device_name, sizeof(device_name_t), 1, file);
+    
+    fclose(file);
+}
+
+void fs_devicename_init() {
+    ESP_LOGI(TAG, "initializing device name in filesystem");
+    FILE *file = fopen(devicename_filename, "w");
+
+    device_name_t default_name = DEFAULT_DEVICENAME();
+
+    fwrite(&default_name, sizeof(device_name_t), 1, file);
+    
+    fclose(file);
+}
+
+void handle_device_name_change(device_name_t* device_name) {
+    ESP_LOGI(TAG, "handle device name change");
+    g_device_name = *device_name;
+    fs_devicename_save(&g_device_name);
+
+    // Is it easier to just restart the board?
+    // LOL x.x
+    esp_restart();
+
+    // pull down pipeline and bluetooth
+    // esp_bt_dev_set_device_name(g_device_name.name);
+    // esp_ble_gap_set_device_name(g_device_name.name);
+    // re-init pipeline
 }
 
 void fs_init() {
