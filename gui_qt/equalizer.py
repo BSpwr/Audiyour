@@ -101,13 +101,13 @@ class EqualizerBand(Qw.QWidget):
         # Text box for entering and displaying gain values
         self.gain_box = Qw.QLineEdit("0")
         self.gain_box.setFixedWidth(30)
-        self.gain_box.setAlignment(Qc.Qt.AlignLeft)
+        self.gain_box.setAlignment(Qc.Qt.AlignVCenter)
         self.gain_box.textChanged.connect(lambda val: self.update_box(val))
 
         # Label showing unit (decibels)
         self.unit_label = Qw.QLabel("dB")
         self.unit_label.setFixedWidth(15)
-        self.unit_label.setAlignment(Qc.Qt.AlignLeft)
+        self.unit_label.setAlignment(Qc.Qt.AlignVCenter)
         self.unit_label.setSizePolicy(
             Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
 
@@ -134,14 +134,14 @@ class EqualizerBand(Qw.QWidget):
         self.inner_layout.setContentsMargins(0, 0, 0, 0)
         self.inner_layout.addWidget(self.gain_box)
         self.inner_layout.addWidget(self.unit_label)
-        self.inner_layout.setAlignment(Qc.Qt.AlignHCenter)
+        self.inner_layout.setAlignment(Qc.Qt.AlignVCenter)
 
         self.outer_layout = Qw.QVBoxLayout(self)
         self.outer_layout.setContentsMargins(0, 0, 0, 0)
         self.outer_layout.addLayout(self.inner_layout)
         self.outer_layout.addWidget(self.slider)
         self.outer_layout.addWidget(self.freq_label)
-        self.outer_layout.setAlignment(Qc.Qt.AlignHCenter)
+        self.outer_layout.setAlignment(Qc.Qt.AlignVCenter)
         self.setLayout(self.outer_layout)
         self.show()
 
