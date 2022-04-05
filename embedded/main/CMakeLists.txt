@@ -6,4 +6,5 @@ idf_component_register(SRCS "eq_iir_filter.c" "equalizer2.c" "main.c"
                             "eq_iir_filter.c"
                             "mixer.c"
                             "profile.c"
+                            "bt_init.c"
                     INCLUDE_DIRS ".")

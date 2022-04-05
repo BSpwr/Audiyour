@@ -6,6 +6,10 @@
 #include "equalizer2.h"
 #include "mixer.h"
 
+#define MAX_DEVICENAME_LEN 32
+typedef struct device_name_t { char name[MAX_DEVICENAME_LEN + 1]; } device_name_t;
+extern device_name_t g_device_name;
+
 #define MAX_NUM_PROFILES 5
 #define MAX_PROFILE_NAME_LEN 32
 
@@ -21,6 +25,10 @@ extern bool g_profiles_save_needed[MAX_NUM_PROFILES];
 extern bool g_profiles_load_needed[MAX_NUM_PROFILES];
 extern bool g_profile_idx_save_needed;
 
+#define DEFAULT_DEVICENAME()\
+    {\
+        .name = "Audiyour\0",\
+    }\
 
 #define DEFAULT_PROFILE()\
     {\
@@ -61,6 +69,11 @@ void fs_load_profiles(profile **profiles, size_t *current_profile, size_t num_pr
 void fs_load_profile(profile **profiles, size_t selected_profile);
 
 void fs_profiles_init(size_t num_profiles);
+
+void fs_devicename_load(device_name_t* device_name);
+void fs_devicename_save(device_name_t* device_name);
+void fs_devicename_init();
+void handle_device_name_change(device_name_t* device_name);
 
 void fs_init();
 void fs_deinit();

@@ -42,6 +42,9 @@ enum
     IDX_CHAR_PROFILE_LOAD,
     IDX_CHAR_PROFILE_LOAD_VAL,
 
+    IDX_CHAR_DEVICENAME,
+    IDX_CHAR_DEVICENAME_VAL,
+
     IDX_CHAR_OUTPUT_GAIN,
     IDX_CHAR_OUTPUT_GAIN_VAL,
 
@@ -56,7 +59,6 @@ typedef struct {
 } prepare_type_env_t;
 
 #define GATT_TAG     "GATT_SERVER"
-#define BT_DEVICE_NAME      "Audiyour"
 
 void gatts_profile_event_handler(esp_gatts_cb_event_t event,
 					esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);

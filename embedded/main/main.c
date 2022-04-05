@@ -48,75 +48,15 @@
 
 #include "pipeline.h"
 #include "profile.h"
+#include "bt_init.h"
 
 #define UART_MONITOR_BAUDRATE (115200)
-
-#define AUDIYOUR_MAIN_TAG "AUDIYOUR MAIN"
-
-
-void bt_init(void) {
-    esp_err_t err;
-    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-    if ((err = esp_bt_controller_init(&bt_cfg)) != ESP_OK) {
-        ESP_LOGE(AUDIYOUR_MAIN_TAG, "%s initialize controller failed: %s\n", __func__, esp_err_to_name(err));
-        return;
-    }
-
-    if ((err = esp_bt_controller_enable(ESP_BT_MODE_BTDM)) != ESP_OK) {
-        ESP_LOGE(AUDIYOUR_MAIN_TAG, "%s enable controller failed: %s\n", __func__, esp_err_to_name(err));
-        return;
-    }
-
-    if ((err = esp_bluedroid_init()) != ESP_OK) {
-        ESP_LOGE(AUDIYOUR_MAIN_TAG, "%s initialize bluedroid failed: %s\n", __func__, esp_err_to_name(err));
-        return;
-    }
-
-    if ((err = esp_bluedroid_enable()) != ESP_OK) {
-        ESP_LOGE(AUDIYOUR_MAIN_TAG, "%s enable bluedroid failed: %s\n", __func__, esp_err_to_name(err));
-        return;
-    }
-
-    /* set up bt device name */
-    esp_bt_dev_set_device_name(BT_DEVICE_NAME);
-
-    /* set discoverable and connectable mode, wait to be connected */
-    esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
-}
-
-
-void bt_deinit(void) {
-    esp_err_t err;
-
-    if ((err = esp_bluedroid_disable()) != ESP_OK) {
-        ESP_LOGE(AUDIYOUR_MAIN_TAG, "%s esp_bluedroid_disable failed: %s\n",  __func__, esp_err_to_name(err));
-        return;
-    }
-
-    if ((err = esp_bluedroid_deinit()) != ESP_OK) {
-        ESP_LOGE(AUDIYOUR_MAIN_TAG, "%s esp_bluedroid_deinit failed: %s\n", __func__, esp_err_to_name(err));
-        return;
-    }
-
-    if ((err = esp_bt_controller_disable()) != ESP_OK) {
-        ESP_LOGE(AUDIYOUR_MAIN_TAG, "%s esp_bt_controller_disable failed: %s\n", __func__, esp_err_to_name(err));
-        return;
-    }
-
-    if ((err = esp_bt_controller_deinit()) != ESP_OK) {
-        ESP_LOGE(AUDIYOUR_MAIN_TAG, "%s esp_bt_controller_deinit failed: %s\n", __func__, esp_err_to_name(err));
-        return;
-    }
-}
-
-
-// --------------------------------------------------------------
 
 // extern "C" {
 //     void app_main(void);
 // }
 
-const char* TAG = "LITTLE_FS";
+static const char* TAG = "AUDIYOUR MAIN";
 
 void app_main(void)
 {
@@ -140,6 +80,7 @@ void app_main(void)
     fs_init();
     // fs_profiles_init(MAX_NUM_PROFILES);
     fs_load_profiles(g_profiles, &g_profile_idx, MAX_NUM_PROFILES);
+    fs_devicename_load(&g_device_name);
 
     bt_init();
     audiyour_pipeline_a2dp_init(&g_audiyour_pipeline);
