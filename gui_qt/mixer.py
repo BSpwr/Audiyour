@@ -23,11 +23,13 @@ class Mixer(Qw.QWidget):
         self.set_defaults_btn.clicked.connect(self.set_defaults)
 
         self.toolbar_layout = Qw.QHBoxLayout()
+        self.toolbar_layout.setContentsMargins(0, 0, 0, 0)
         self.toolbar_layout.addWidget(self.jack_enable_btn)
         self.toolbar_layout.addWidget(self.wireless_enable_btn)
         self.toolbar_layout.addWidget(self.set_defaults_btn)
 
         self.bands_layout = Qw.QHBoxLayout()
+        self.bands_layout.setContentsMargins(0, 0, 0, 0)
 
         for idx, b_freq in enumerate(self.tracks):
             band_w = MixerBand(b_freq, parent=self)
@@ -116,6 +118,19 @@ class MixerBand(Qw.QWidget):
         super().__init__(parent)
         self.label = label
 
+        # Text box for entering and displaying gain values
+        self.gain_box = Qw.QLineEdit("0")
+        self.gain_box.setFixedWidth(30)
+        self.gain_box.textChanged.connect(lambda val: self.update_box(val))
+
+        # Label showing unit (decibels)
+        self.unit_label = Qw.QLabel("dB")
+        self.unit_label.setFixedWidth(15)
+        self.unit_label.setAlignment(Qc.Qt.AlignVCenter)
+        self.unit_label.setSizePolicy(
+            Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
+
+        # Gain slider
         self.slider = JumpSlider(Qc.Qt.Horizontal, parent=self)
         self.slider.setMinimum(-40)
         self.slider.setMaximum(20)
@@ -126,67 +141,46 @@ class MixerBand(Qw.QWidget):
         self.slider.setSizePolicy(
             Qw.QSizePolicy.Expanding, Qw.QSizePolicy.Fixed)
         self.slider.valueChanged.connect(lambda val: self.update_db_value(val))
-
-        self.top = TopOfMixerBand(self.slider)
         
-
+        # Audio source label
         self.label_text_box = Qw.QLabel(self.label, parent=self)
         self.label_text_box.setAlignment(Qc.Qt.AlignVCenter)
         self.label_text_box.setSizePolicy(
             Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
 
-        self.layout = Qw.QVBoxLayout()
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.addWidget(self.top)
-        self.layout.addWidget(self.slider)
-        self.layout.addWidget(self.label_text_box)
-        self.layout.setAlignment(Qc.Qt.AlignVCenter)
-        self.setLayout(self.layout)
+        # Align gain text box and unit label horizontally
+        self.inner_layout = Qw.QHBoxLayout()
+        self.inner_layout.setContentsMargins(0, 0, 0, 0)
+        self.inner_layout.addWidget(self.gain_box)
+        self.inner_layout.addWidget(self.unit_label)
+        self.inner_layout.setAlignment(Qc.Qt.AlignLeft)
+
+        self.outer_layout = Qw.QVBoxLayout(self)
+        self.outer_layout.setContentsMargins(0, 0, 0, 0)
+        self.outer_layout.addLayout(self.inner_layout)
+        self.outer_layout.addWidget(self.slider)
+        self.outer_layout.addWidget(self.label_text_box)
+        self.outer_layout.setAlignment(Qc.Qt.AlignVCenter)
+        self.setLayout(self.outer_layout)
         self.show()
 
 
     def update_db_value(self, value: int):
-        self.top.db_box.setText(f'{value}')
+        self.gain_box.setText(f'{value}')
     
-    
-
-class TopOfMixerBand(Qw.QWidget):
-    def __init__(self, slider: Qw.QSlider, parent=None):
-        super().__init__(parent)
-        self.slider = slider
-        #Added box for gain values
-        self.db_box = Qw.QLineEdit("0")
-        self.db_box.setFixedWidth(30)
-        self.db_box.textChanged.connect(lambda val: self.update_box(val, self.slider))
-
-        #Added box for db
-        self.db_value_label = Qw.QLabel("dB")
-        self.db_value_label.setFixedWidth(15)
-        self.db_value_label.setAlignment(Qc.Qt.AlignVCenter)
-        self.db_value_label.setSizePolicy(
-            Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
-
-
-        self.layout = Qw.QHBoxLayout()
-        self.layout.addWidget(self.db_box)
-        self.layout.addWidget(self.db_value_label)
-        self.layout.setAlignment(Qc.Qt.AlignVCenter)
-        self.setLayout(self.layout)
-        self.show()
-
-    def update_box(self, value: str, slider: Qw.QWidget):
+    def update_box(self, value: str):
         try:
             if (len(value) == 0):
-                slider.setValue(0)
-                self.db_box.setText("")
+                self.slider.setValue(0)
+                self.gain_box.setText("")
             elif (int(value) < -40):
-                slider.setValue(-40)
-                self.db_box.setText("-20")
+                self.slider.setValue(-40)
+                self.gain_box.setText("-40")
             elif (int(value) > 20):
-                slider.setValue(20)
-                self.db_box.setText("10")
+                self.slider.setValue(20)
+                self.gain_box.setText("20")
             else:
-                slider.setValue(int(value))
-            print(int(value))
+                self.slider.setValue(int(value))
+            # print(int(value))
         except ValueError:
             print("Not a value")
