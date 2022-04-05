@@ -129,10 +129,22 @@ class _MyHomePageState extends State<MyHomePage> {
         child: ListView.separated(
           itemCount: scanResultList.length,
           itemBuilder: (context, index) {
-            return listItem(scanResultList[index]);
+            if (scanResultList[index].device.name.isNotEmpty &&
+                scanResultList[index].advertisementData.localName.isNotEmpty) {
+              return listItem(scanResultList[index]);
+            }
+            else {
+              return const Divider(thickness: 0.0,height: 0.0,color: Color.fromRGBO(0, 0, 0, 0),);
+            }
           },
           separatorBuilder: (context, index) {
-            return const Divider();
+            if (scanResultList[index].device.name.isNotEmpty &&
+                scanResultList[index].advertisementData.localName.isNotEmpty) {
+              return const Divider();
+              } else {
+              return const Divider(thickness: 0.0,height: 0.0,color: Color.fromRGBO(0, 0, 0, 0),);
+              }
+
           },
         ),
       ),

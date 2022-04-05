@@ -153,7 +153,7 @@ class EqualizerBand(Qw.QWidget):
     def update_box(self, value: str):
         try:
             if (len(value) == 0):
-                self.slider.setValue(0)
+                # self.slider.setValue(0)
                 self.gain_box.setText("")
             elif (int(value) < -20):
                 self.slider.setValue(-20)
