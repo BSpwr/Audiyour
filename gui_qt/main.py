@@ -20,7 +20,7 @@ class MainWindow(Qw.QMainWindow):
         self.bt_man = BluetoothManager()
 
         desktop_size = Qg.QGuiApplication.primaryScreen().availableGeometry().size()
-        self.resize(desktop_size.width() * 0.3, desktop_size.height() * 0.7)
+        self.resize(desktop_size.width() * 0.3, desktop_size.height() * 0.8)
 
         # if len(ports) != 0: self.ser_man.set_port(ports[0])
 
@@ -84,10 +84,14 @@ class MainUI(Qw.QWidget):
         self.profile_save_btn = Qw.QPushButton('Save Profile')
         self.profile_save_btn.clicked.connect(lambda: asyncio.ensure_future(self.bt_man.write_save_profile()))
 
+        self.load_settings_btn = Qw.QPushButton("Load From Device")
+        self.load_settings_btn.clicked.connect(lambda: asyncio.ensure_future(self.load_settings()))
+
         self.profile_layout = Qw.QHBoxLayout()
         self.profile_layout.addWidget(self.profile_sel)
         self.profile_layout.addWidget(self.profile_load_btn)
         self.profile_layout.addWidget(self.profile_save_btn)
+        self.profile_layout.addWidget(self.load_settings_btn)
 
         self.conn_group = Qw.QGroupBox("Connection")
         self.conn_group.setLayout(self.conn_status_layout)
@@ -139,6 +143,10 @@ class MainUI(Qw.QWidget):
         if self.bt_man.is_connected():
             asyncio.ensure_future(self.equalizer.load_settings())
             asyncio.ensure_future(self.mixer.load_settings())
+
+    async def load_settings(self):
+        await self.equalizer.load_settings()
+        await self.mixer.load_settings()
 
     async def update_device(self, port_idx: str):
         self.bt_man.set_address(self.devices[self.device_sel.itemText(port_idx)])
