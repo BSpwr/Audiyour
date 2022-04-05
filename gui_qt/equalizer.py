@@ -98,6 +98,20 @@ class EqualizerBand(Qw.QWidget):
         super().__init__(parent)
         self.center_freq = center_freq
 
+        # Text box for entering and displaying gain values
+        self.gain_box = Qw.QLineEdit("0")
+        self.gain_box.setFixedWidth(30)
+        self.gain_box.setAlignment(Qc.Qt.AlignLeft)
+        self.gain_box.textChanged.connect(lambda val: self.update_box(val))
+
+        # Label showing unit (decibels)
+        self.unit_label = Qw.QLabel("dB")
+        self.unit_label.setFixedWidth(15)
+        self.unit_label.setAlignment(Qc.Qt.AlignLeft)
+        self.unit_label.setSizePolicy(
+            Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
+
+        # Gain slider
         self.slider = JumpSlider(Qc.Qt.Vertical, parent=self)
         self.slider.setMinimum(-20)
         self.slider.setMaximum(10)
@@ -109,68 +123,46 @@ class EqualizerBand(Qw.QWidget):
             Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Expanding)
         self.slider.valueChanged.connect(lambda val: self.update_db_value(val))
 
-        self.freq_text_box = Qw.QLabel(self.center_freq, parent=self)
-        self.freq_text_box.setAlignment(Qc.Qt.AlignVCenter)
-        self.freq_text_box.setSizePolicy(
+        # Frequency label
+        self.freq_label = Qw.QLabel(self.center_freq, parent=self)
+        self.freq_label.setAlignment(Qc.Qt.AlignVCenter)
+        self.freq_label.setSizePolicy(
             Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
 
-        self.top = TopEqualizerBand(self.slider)
+        # Align gain text box and unit label horizontally
+        self.inner_layout = Qw.QHBoxLayout()
+        self.inner_layout.setContentsMargins(0, 0, 0, 0)
+        self.inner_layout.addWidget(self.gain_box)
+        self.inner_layout.addWidget(self.unit_label)
+        self.inner_layout.setAlignment(Qc.Qt.AlignHCenter)
 
-        #self.layout.addWidget(self.gain_box_text)
-        self.layout = Qw.QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.addWidget(self.top)
-        self.layout.addWidget(self.slider)
-        self.layout.addWidget(self.freq_text_box)
-        self.layout.setAlignment(Qc.Qt.AlignLeft)
-        self.setLayout(self.layout)
+        self.outer_layout = Qw.QVBoxLayout(self)
+        self.outer_layout.setContentsMargins(0, 0, 0, 0)
+        self.outer_layout.addLayout(self.inner_layout)
+        self.outer_layout.addWidget(self.slider)
+        self.outer_layout.addWidget(self.freq_label)
+        self.outer_layout.setAlignment(Qc.Qt.AlignHCenter)
+        self.setLayout(self.outer_layout)
         self.show()
 
     def update_db_value(self, value: int):
         #self.db_value_label.setText(f'{value} dB')
-        self.top.db_box.setText(f'{value}')
+        self.gain_box.setText(f'{value}')
         #self.slider.setValue(int(value))
 
-    
-
-class TopEqualizerBand(Qw.QWidget):
-    def __init__(self, slider: Qw.QWidget, parent=None):
-        super().__init__(parent)
-        self.slider = slider
-
-        #Added box for gain values
-        self.db_box = Qw.QLineEdit("0")
-        self.db_box.setFixedWidth(30)
-        self.db_box.setAlignment(Qc.Qt.AlignLeft)
-        self.db_box.textChanged.connect(lambda val: self.update_box(val, self.slider))
-
-        #Added box for db
-        self.db_value_label = Qw.QLabel("dB")
-        self.db_value_label.setFixedWidth(15)
-        self.db_value_label.setAlignment(Qc.Qt.AlignLeft)
-        self.db_value_label.setSizePolicy(
-            Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
-
-        self.layout = Qw.QHBoxLayout(self)
-        self.layout.addWidget(self.db_box)
-        self.layout.addWidget(self.db_value_label)
-        self.layout.setAlignment(Qc.Qt.AlignLeft)
-        self.setLayout(self.layout)
-        self.show()
-        
-    def update_box(self, value: str, slider: Qw.QWidget):
+    def update_box(self, value: str):
         try:
             if (len(value) == 0):
                 self.slider.setValue(0)
-                self.db_box.setText("")
+                self.gain_box.setText("")
             elif (int(value) < -20):
                 self.slider.setValue(-20)
-                self.db_box.setText("-20")
+                self.gain_box.setText("-20")
             elif (int(value) > 10):
                 self.slider.setValue(10)
-                self.db_box.setText("10")
+                self.gain_box.setText("10")
             else:
                 self.slider.setValue(int(value))
-            print(int(value))
+            # print(int(value))
         except ValueError:
             print("Not a value")
