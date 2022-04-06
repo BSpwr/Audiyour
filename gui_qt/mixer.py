@@ -11,15 +11,21 @@ class Mixer(Qw.QWidget):
         self.tracks = ['3.5mm Jack', 'Bluetooth']
         self.band_widgets = []
 
-        self.jack_enable_btn = Qw.QPushButton("Enable 3.5mm Jack Input")
+        self.string_enable_jack_input = "Enable 3.5mm Jack Input"
+        self.string_disable_jack_input = "Disable 3.5mm Jack Input"
+        self.string_enable_bluetooth_input = "Enable Bluetooth Input"
+        self.string_enable_bluetooth_input = "Disable Bluetooth Input"
+        self.string_reset = "Reset"
+
+        self.jack_enable_btn = Qw.QPushButton(self.string_enable_jack_input)
         self.jack_enable_btn.setCheckable(True)
         self.jack_enable_btn.toggled.connect(self.jack_mixer_enable)
 
-        self.wireless_enable_btn = Qw.QPushButton("Enable Bluetooth Input")
+        self.wireless_enable_btn = Qw.QPushButton(self.string_enable_bluetooth_input)
         self.wireless_enable_btn.setCheckable(True)
         self.wireless_enable_btn.toggled.connect(self.wireless_mixer_enable)
 
-        self.set_defaults_btn = Qw.QPushButton("Reset")
+        self.set_defaults_btn = Qw.QPushButton(self.string_reset)
         self.set_defaults_btn.clicked.connect(self.set_defaults)
 
         self.toolbar_layout = Qw.QHBoxLayout()
@@ -34,7 +40,7 @@ class Mixer(Qw.QWidget):
         for idx, b_freq in enumerate(self.tracks):
             band_w = MixerBand(b_freq, parent=self)
 
-            band_w.slider.valueChanged.connect(lambda x, idx=idx: asyncio.ensure_future(self.do_band_update(idx, dB=x)))
+            band_w.gain_box.valueChanged.connect(lambda x, idx=idx: asyncio.ensure_future(self.do_band_update(idx, dB=x)))
 
             self.band_widgets.append(band_w)
             self.bands_layout.addWidget(band_w)
@@ -54,19 +60,16 @@ class Mixer(Qw.QWidget):
         gains = self.parent().parent().bt_man.mix_gains
 
         for idx, band_w in enumerate(self.band_widgets):
-            band_w.slider.blockSignals(True)
-            band_w.slider.setValue(int(gains[idx]))
-            band_w.update_db_value(int(gains[idx]))
-            band_w.slider.blockSignals(False)
+            band_w.set_gain_no_signal(gains[idx])
 
         await self.parent().parent().bt_man.read_mix_line_in_en()
         jack_enable = self.parent().parent().bt_man.mix_line_in_en
         self.jack_enable_btn.blockSignals(True)
         self.jack_enable_btn.setChecked(jack_enable)
         if self.jack_enable_btn.isChecked():
-            self.jack_enable_btn.setText("Disable 3.5mm Jack Input")
+            self.jack_enable_btn.setText(self.string_disable_jack_input)
         else:
-            self.jack_enable_btn.setText("Enable 3.5mm Jack Input")
+            self.jack_enable_btn.setText(self.string_enable_jack_input)
         self.jack_enable_btn.blockSignals(False)
 
         await self.parent().parent().bt_man.read_mix_wireless_in_en()
@@ -74,36 +77,33 @@ class Mixer(Qw.QWidget):
         self.wireless_enable_btn.blockSignals(True)
         self.wireless_enable_btn.setChecked(wireless_enable)
         if self.wireless_enable_btn.isChecked():
-            self.wireless_enable_btn.setText("Disable Bluetooth Input")
+            self.wireless_enable_btn.setText(self.string_enable_bluetooth_input)
         else:
-            self.wireless_enable_btn.setText("Enable Bluetooth Input")
+            self.wireless_enable_btn.setText(self.string_enable_bluetooth_input)
         self.wireless_enable_btn.blockSignals(False)
 
 
     def jack_mixer_enable(self):
         if self.jack_enable_btn.isChecked():
             asyncio.ensure_future(self.parent().parent().bt_man.write_mix_line_in_en(True))
-            self.jack_enable_btn.setText("Disable 3.5mm Jack Input")
+            self.jack_enable_btn.setText(self.string_disable_jack_input)
         else:
             asyncio.ensure_future(self.parent().parent().bt_man.write_mix_line_in_en(False))
-            self.jack_enable_btn.setText("Enable 3.5mm Jack Input")
+            self.jack_enable_btn.setText(self.string_enable_jack_input)
 
 
     def wireless_mixer_enable(self):
         if self.wireless_enable_btn.isChecked():
             asyncio.ensure_future(self.parent().parent().bt_man.write_mix_wireless_in_en(True))
-            self.wireless_enable_btn.setText("Disable Bluetooth Input")
+            self.wireless_enable_btn.setText(self.string_enable_bluetooth_input)
         else:
             asyncio.ensure_future(self.parent().parent().bt_man.write_mix_wireless_in_en(False))
-            self.wireless_enable_btn.setText("Enable Bluetooth Input")
+            self.wireless_enable_btn.setText(self.string_enable_bluetooth_input)
 
 
     def set_defaults(self):
         for band_w in self.band_widgets:
-            band_w.slider.blockSignals(True)
-            band_w.slider.setValue(0)
-            band_w.update_db_value(0)
-            band_w.slider.blockSignals(False)
+            band_w.set_gain_no_signal(0)
 
         asyncio.ensure_future(self.parent().parent().bt_man.write_mix_gains([0 for i in range(0, 2)]))
 
@@ -116,12 +116,22 @@ class Mixer(Qw.QWidget):
 class MixerBand(Qw.QWidget):
     def __init__(self, label: str, parent=None):
         super().__init__(parent)
+        self.MAX_GAIN = 20
+        self.MIN_GAIN = -40
+
         self.label = label
 
         # Text box for entering and displaying gain values
-        self.gain_box = Qw.QLineEdit("0")
-        self.gain_box.setFixedWidth(30)
-        self.gain_box.textChanged.connect(lambda val: self.update_box(val))
+        self.gain_box = Qw.QDoubleSpinBox()
+        self.gain_box.setMinimum(self.MIN_GAIN)
+        self.gain_box.setMaximum(self.MAX_GAIN)
+        self.gain_box.setSingleStep(0.1)
+        self.gain_box.setDecimals(1)
+        self.gain_box.setButtonSymbols(Qw.QAbstractSpinBox.NoButtons)
+        self.gain_box.setFixedWidth(40)
+        self.gain_box.setAlignment(Qc.Qt.AlignVCenter)
+        self.gain_box.setSizePolicy(
+            Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
 
         # Label showing unit (decibels)
         self.unit_label = Qw.QLabel("dB")
@@ -132,15 +142,18 @@ class MixerBand(Qw.QWidget):
 
         # Gain slider
         self.slider = JumpSlider(Qc.Qt.Horizontal, parent=self)
-        self.slider.setMinimum(-40)
-        self.slider.setMaximum(20)
+        self.slider.setMinimum(self.MIN_GAIN * 10)
+        self.slider.setMaximum(self.MAX_GAIN * 10)
         self.slider.setSingleStep(1)
         self.slider.setPageStep(1)
-        self.slider.setTickInterval(1)
+        self.slider.setTickInterval(10)
         self.slider.setTickPosition(Qw.QSlider.TicksBothSides)
         self.slider.setSizePolicy(
             Qw.QSizePolicy.Expanding, Qw.QSizePolicy.Fixed)
-        self.slider.valueChanged.connect(lambda val: self.update_db_value(val))
+
+        # Link text box and slider
+        self.gain_box.valueChanged.connect(lambda x: self.slider.setValue(x * 10))
+        self.slider.valueChanged.connect(lambda x: self.gain_box.setValue(x / 10))
         
         # Audio source label
         self.label_text_box = Qw.QLabel(self.label, parent=self)
@@ -164,23 +177,8 @@ class MixerBand(Qw.QWidget):
         self.setLayout(self.outer_layout)
         self.show()
 
-
-    def update_db_value(self, value: int):
-        self.gain_box.setText(f'{value}')
-    
-    def update_box(self, value: str):
-        try:
-            if (len(value) == 0):
-                self.slider.setValue(0)
-                self.gain_box.setText("")
-            elif (int(value) < -40):
-                self.slider.setValue(-40)
-                self.gain_box.setText("-40")
-            elif (int(value) > 20):
-                self.slider.setValue(20)
-                self.gain_box.setText("20")
-            else:
-                self.slider.setValue(int(value))
-            # print(int(value))
-        except ValueError:
-            print("Not a value")
+    def set_gain_no_signal(self, gain: int):
+        self.gain_box.blockSignals(True)
+        self.gain_box.setValue(gain)
+        self.slider.setValue(gain * 10)
+        self.gain_box.blockSignals(False)
