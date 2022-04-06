@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'dart:typed_data';
+import 'dart:convert';
 
 /*
 static const uint16_t GATTS_CHAR_EQ_GAINS_VAL                       = 0xFF01;
@@ -53,6 +54,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
   List<int> statusBT = [1];
   List<int> statusAUX = [1];
   List<int> statusEQ = [1];
+  final deviceNameController = TextEditingController();
 
   //Initializes state for widget
   @override
@@ -68,6 +70,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     enableBT = true;
     enableAUX = true;
     enableEQ = true;
+    deviceNameController.text = "Audiyour";
     connect();
   }
 
@@ -396,6 +399,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
     loadProfile();
   }
 
+  void nameUpdate() async {
+    // TODO: Make sure its correct charecteristic
+    await _services[2].characteristics[8].write(utf8.encode(deviceNameController.text));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -426,6 +434,41 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         }
                       },
                       child: Text(connectButtonText)
+                  ),
+                  const Spacer(),
+                ],
+              ),
+              const CustomDivider(text: 'Device Rename'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const Spacer(),
+                  SizedBox(
+                      width: 200,
+                      height: 35,
+                      child: TextField(
+                        textAlign: TextAlign.left,
+                        controller: deviceNameController,
+                        decoration: const InputDecoration.collapsed (border: OutlineInputBorder(),
+                            hintText: 'Audiyour'
+                        ),
+                        style: const TextStyle(
+                            fontSize: 18.0,
+                            fontWeight: FontWeight.normal
+                        ),
+                      )
+                  ),
+                  const Spacer(),
+                  const Spacer(),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          primary: Colors.blue,
+                          padding: const EdgeInsets.fromLTRB(5, 0, 5, 0)
+                      ),
+                      child: const Text('Rename Device'),
+                      onPressed: () {
+                        nameUpdate();
+                      }
                   ),
                   const Spacer(),
                 ],
