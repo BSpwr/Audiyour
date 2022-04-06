@@ -42,14 +42,7 @@ class MainUI(Qw.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # self.manager = gatt.DeviceManager(adapter_name='hci0')
-
         self.bt_man = self.parent().bt_man
-        # self.device.connect()
-
-        # self.manager.run()
-
-        # self.device.write_gain_index(0, 0)
 
         self.equalizer = Equalizer(parent=self)
         self.mixer = Mixer(parent=self)

@@ -1,6 +1,7 @@
 from PySide2 import QtCore as Qc
 from PySide2 import QtWidgets as Qw
 import asyncio
+import copy
 
 from jumpSlider import JumpSlider
 
@@ -11,15 +12,25 @@ class Equalizer(Qw.QWidget):
         self.freq_bands = [31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
         self.band_widgets = []
 
-        self.set_enable_btn = Qw.QPushButton("Enable Equalizer")
+        self.string_enable_equalizer = "Enable Equalizer"
+        self.string_disable_equalizer = "Disable Equalizer"
+        self.string_reset = "Reset"
+
+        self.set_enable_btn = Qw.QPushButton(self.string_enable_equalizer)
         self.set_enable_btn.setCheckable(True)
         self.set_enable_btn.toggled.connect(self.set_equalizer_enable)
 
-        self.set_defaults_btn = Qw.QPushButton("Reset")
-        self.set_defaults_btn.clicked.connect(self.set_defaults)
+        # Equalizer presets
+        self.preset_dropdown = EqualizerPresets(self)
+        self.preset_dropdown.activated.connect(lambda: self.set_all_gains(self.preset_dropdown.get_preset()))
+
+        # Reset button will reset to flat preset
+        self.set_defaults_btn = Qw.QPushButton(self.string_reset)
+        self.set_defaults_btn.clicked.connect(lambda: self.set_defaults())
 
         self.toolbar_layout = Qw.QHBoxLayout()
         self.toolbar_layout.addWidget(self.set_enable_btn)
+        self.toolbar_layout.addWidget(self.preset_dropdown)
         self.toolbar_layout.addWidget(self.set_defaults_btn)
 
         self.bands_layout = Qw.QHBoxLayout()
@@ -30,7 +41,10 @@ class Equalizer(Qw.QWidget):
             else:
                 band_w = EqualizerBand(f'{b_freq} Hz', parent=self)
 
+            # Wire up each band to the bluetooth manager to change the relevant frequency
             band_w.gain_box.valueChanged.connect(lambda x, idx=idx: asyncio.ensure_future(self.do_band_update(idx, dB=x)))
+            # Wire up each band to set the equalizer preset to "Custom" -- since manual edits mean a preset is no longer being used
+            band_w.gain_box.valueChanged.connect(lambda: self.preset_dropdown.using_custom())
 
             self.band_widgets.append(band_w)
             self.bands_layout.addWidget(band_w)
@@ -52,13 +66,15 @@ class Equalizer(Qw.QWidget):
         for idx, band_w in enumerate(self.band_widgets):
             band_w.set_gain_no_signal(gains[idx])
 
+        self.preset_dropdown.using_custom()
+
         await self.parent().parent().bt_man.read_eq_enable()
         set_enable = self.parent().parent().bt_man.eq_enable
         self.set_enable_btn.blockSignals(True)
         if set_enable:
-             self.set_enable_btn.setText("Disable Equalizer")
+             self.set_enable_btn.setText(self.string_disable_equalizer)
         if not set_enable:
-             self.set_enable_btn.setText("Enable Equalizer")
+             self.set_enable_btn.setText(self.string_enable_equalizer)
         self.set_enable_btn.setChecked(set_enable)
         self.set_enable_btn.blockSignals(False)
 
@@ -66,29 +82,34 @@ class Equalizer(Qw.QWidget):
     def set_equalizer_enable(self):
         if self.set_enable_btn.isChecked():
             asyncio.ensure_future(self.parent().parent().bt_man.write_eq_enable(True))
-            self.set_enable_btn.setText("Disable Equalizer")
+            self.set_enable_btn.setText(self.string_disable_equalizer)
         else:
             asyncio.ensure_future(self.parent().parent().bt_man.write_eq_enable(False))
-            self.set_enable_btn.setText("Enable Equalizer")
+            self.set_enable_btn.setText(self.string_enable_equalizer)
+
+
+    def set_all_gains(self, gains):
+        for i, band_w in enumerate(self.band_widgets):
+            band_w.set_gain_no_signal(gains[i])
+
+        asyncio.ensure_future(self.parent().parent().bt_man.write_eq_gains(gains))
 
 
     def set_defaults(self):
-        for band_w in self.band_widgets:
-            band_w.set_gain_no_signal(0)
-
-        asyncio.ensure_future(self.parent().parent().bt_man.write_eq_gains([0 for i in range(0, 10)]))
-
+        self.set_all_gains([0 for _ in range(0, 10)])
+        self.preset_dropdown.use_flat()
 
     async def do_band_update(self, band_num, dB):
+
         await self.parent().parent().bt_man.write_eq_gain_index(band_num, dB)
         self.parent().parent().update_conn_status()
-
 
 class EqualizerBand(Qw.QWidget):
     def __init__(self, center_freq: str, parent=None):
         super().__init__(parent)
         self.MAX_GAIN = 10
         self.MIN_GAIN = -20
+        self.string_unit = "dB"
 
         self.center_freq = center_freq
 
@@ -105,7 +126,7 @@ class EqualizerBand(Qw.QWidget):
             Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
 
         # Label showing unit (decibels)
-        self.unit_label = Qw.QLabel("dB")
+        self.unit_label = Qw.QLabel(self.string_unit)
         self.unit_label.setFixedWidth(15)
         self.unit_label.setAlignment(Qc.Qt.AlignVCenter)
         self.unit_label.setSizePolicy(
@@ -153,3 +174,42 @@ class EqualizerBand(Qw.QWidget):
         self.gain_box.setValue(gain)
         self.slider.setValue(gain * 10)
         self.gain_box.blockSignals(False)
+
+
+class EqualizerPresets(Qw.QComboBox):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.presets = {}
+        self.presets["Preset: Flat"] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.presets["Preset: Dark"] = [5, 4, 3, 2, 1, -1, -2, -3, -4, -5]
+        self.presets["Preset: Bright"] = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5]
+        self.presets["Preset: Bass Boost"] = [6, 5.5, 4.5, 1.5, 0.5, 0, 0, 0, 0, 0]
+        self.presets["Preset: Bass Reduction"] = [-6, -5.5, -4.5, -1.5, -0.5, 0, 0, 0, 0, 0]
+        self.presets["Preset: Treble Boost"] = [0, 0, 0, 0, 0, 0, 0.5, 1.5, 5.3, 3.8]
+        self.presets["Preset: Treble Reduction"] = [0, 0, 0, 0, 0, 0, -0.5, -1.5, -5.3, -3.8]
+        self.presets["Preset: Loudness"] = [6, 5.3, 1.6, -1.5, -2.8, -1.5, -4.8, -5, 0.3, 2.5]
+        self.presets["Preset: Vocal Boost"] = [-1, -1, -1.1, -0.6, 0.7, 3.1, 4.6, 3.3, 0.6, 0]
+
+        self.placeholderText = "No Preset Used -- Custom"
+
+        for preset_name in self.presets.keys():
+            self.addItem(preset_name)
+
+        # Workaround for using placeholder text while not editable
+        self.placeholder = Qw.QLabel("  " + self.placeholderText);
+        self.layout = Qw.QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0);
+        self.layout.addWidget(self.placeholder)
+        self.setLayout(self.layout)
+        self.currentIndexChanged.connect(lambda index: self.placeholder.setVisible(index == -1))
+        self.setCurrentIndex(-1);
+
+    def get_preset(self):
+        return copy.deepcopy(self.presets[str(self.currentText())])
+
+    def using_custom(self):
+        self.setCurrentIndex(-1)
+
+    def use_flat(self):
+        self.setCurrentIndex(0)
