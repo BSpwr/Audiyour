@@ -118,6 +118,7 @@ class MixerBand(Qw.QWidget):
         super().__init__(parent)
         self.MAX_GAIN = 20
         self.MIN_GAIN = -40
+        self.string_unit = "dB"
 
         self.label = label
 
@@ -134,7 +135,7 @@ class MixerBand(Qw.QWidget):
             Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
 
         # Label showing unit (decibels)
-        self.unit_label = Qw.QLabel("dB")
+        self.unit_label = Qw.QLabel(self.string_unit)
         self.unit_label.setFixedWidth(15)
         self.unit_label.setAlignment(Qc.Qt.AlignVCenter)
         self.unit_label.setSizePolicy(
