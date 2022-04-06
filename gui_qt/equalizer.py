@@ -30,7 +30,7 @@ class Equalizer(Qw.QWidget):
             else:
                 band_w = EqualizerBand(f'{b_freq} Hz', parent=self)
 
-            band_w.slider.valueChanged.connect(lambda x, idx=idx: asyncio.ensure_future(self.do_band_update(idx, dB=x)))
+            band_w.gain_box.valueChanged.connect(lambda x, idx=idx: asyncio.ensure_future(self.do_band_update(idx, dB=x)))
 
             self.band_widgets.append(band_w)
             self.bands_layout.addWidget(band_w)
@@ -50,21 +50,15 @@ class Equalizer(Qw.QWidget):
         gains = self.parent().parent().bt_man.eq_gains
 
         for idx, band_w in enumerate(self.band_widgets):
-            band_w.slider.blockSignals(True)
-            band_w.slider.setValue(gains[idx])
-            band_w.update_db_value(gains[idx])
-            band_w.slider.blockSignals(False)
-        # self.set_enable_btn.blockSignals(True)
-        # self.set_enable_btn.setChecked(status)
-        # if self.set_enable_btn.isChecked():
-        #     self.set_enable_btn.setText("Disable Equalizer")
-        # else:
-        #     self.set_enable_btn.setText("Enable Equalizer")
-        # self.set_enable_btn.blockSignals(False)
+            band_w.set_gain_no_signal(gains[idx])
 
         await self.parent().parent().bt_man.read_eq_enable()
         set_enable = self.parent().parent().bt_man.eq_enable
         self.set_enable_btn.blockSignals(True)
+        if set_enable:
+             self.set_enable_btn.setText("Disable Equalizer")
+        if not set_enable:
+             self.set_enable_btn.setText("Enable Equalizer")
         self.set_enable_btn.setChecked(set_enable)
         self.set_enable_btn.blockSignals(False)
 
@@ -80,10 +74,7 @@ class Equalizer(Qw.QWidget):
 
     def set_defaults(self):
         for band_w in self.band_widgets:
-            band_w.slider.blockSignals(True)
-            band_w.slider.setValue(0)
-            band_w.update_db_value(0)
-            band_w.slider.blockSignals(False)
+            band_w.set_gain_no_signal(0)
 
         asyncio.ensure_future(self.parent().parent().bt_man.write_eq_gains([0 for i in range(0, 10)]))
 
@@ -96,13 +87,22 @@ class Equalizer(Qw.QWidget):
 class EqualizerBand(Qw.QWidget):
     def __init__(self, center_freq: str, parent=None):
         super().__init__(parent)
+        self.MAX_GAIN = 10
+        self.MIN_GAIN = -20
+
         self.center_freq = center_freq
 
         # Text box for entering and displaying gain values
-        self.gain_box = Qw.QLineEdit("0")
-        self.gain_box.setFixedWidth(30)
+        self.gain_box = Qw.QDoubleSpinBox()
+        self.gain_box.setMinimum(self.MIN_GAIN)
+        self.gain_box.setMaximum(self.MAX_GAIN)
+        self.gain_box.setSingleStep(0.1)
+        self.gain_box.setDecimals(1)
+        self.gain_box.setButtonSymbols(Qw.QAbstractSpinBox.NoButtons)
+        self.gain_box.setFixedWidth(40)
         self.gain_box.setAlignment(Qc.Qt.AlignVCenter)
-        self.gain_box.textChanged.connect(lambda val: self.update_box(val))
+        self.gain_box.setSizePolicy(
+            Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Fixed)
 
         # Label showing unit (decibels)
         self.unit_label = Qw.QLabel("dB")
@@ -113,15 +113,18 @@ class EqualizerBand(Qw.QWidget):
 
         # Gain slider
         self.slider = JumpSlider(Qc.Qt.Vertical, parent=self)
-        self.slider.setMinimum(-20)
-        self.slider.setMaximum(10)
+        self.slider.setMinimum(self.MIN_GAIN * 10)
+        self.slider.setMaximum(self.MAX_GAIN * 10)
         self.slider.setSingleStep(1)
         self.slider.setPageStep(1)
-        self.slider.setTickInterval(1)
+        self.slider.setTickInterval(10)
         self.slider.setTickPosition(Qw.QSlider.TicksBothSides)
         self.slider.setSizePolicy(
             Qw.QSizePolicy.Fixed, Qw.QSizePolicy.Expanding)
-        self.slider.valueChanged.connect(lambda val: self.update_db_value(val))
+
+        # Link text box and slider
+        self.gain_box.valueChanged.connect(lambda x: self.slider.setValue(x * 10))
+        self.slider.valueChanged.connect(lambda x: self.gain_box.setValue(x / 10))
 
         # Frequency label
         self.freq_label = Qw.QLabel(self.center_freq, parent=self)
@@ -145,24 +148,8 @@ class EqualizerBand(Qw.QWidget):
         self.setLayout(self.outer_layout)
         self.show()
 
-    def update_db_value(self, value: int):
-        #self.db_value_label.setText(f'{value} dB')
-        self.gain_box.setText(f'{value}')
-        #self.slider.setValue(int(value))
-
-    def update_box(self, value: str):
-        try:
-            if (len(value) == 0):
-                # self.slider.setValue(0)
-                self.gain_box.setText("")
-            elif (int(value) < -20):
-                self.slider.setValue(-20)
-                self.gain_box.setText("-20")
-            elif (int(value) > 10):
-                self.slider.setValue(10)
-                self.gain_box.setText("10")
-            else:
-                self.slider.setValue(int(value))
-            # print(int(value))
-        except ValueError:
-            print("Not a value")
+    def set_gain_no_signal(self, gain: int):
+        self.gain_box.blockSignals(True)
+        self.gain_box.setValue(gain)
+        self.slider.setValue(gain * 10)
+        self.gain_box.blockSignals(False)

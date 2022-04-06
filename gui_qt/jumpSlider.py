@@ -5,9 +5,9 @@ from PySide2 import QtWidgets as Qw
 class JumpSlider(Qw.QSlider):
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
-        if event.buttons() & Qc.Qt.LeftButton:
-            val = self.pixelPosToRangeValue(event.pos())
-            self.setValue(val)
+        if event.button() == Qc.Qt.LeftButton:
+           val = self.pixelPosToRangeValue(event.pos())
+           self.setValue(val)
 
     def pixelPosToRangeValue(self, pos):
         opt = Qw.QStyleOptionSlider()

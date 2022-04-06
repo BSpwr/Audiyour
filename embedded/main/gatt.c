@@ -11,9 +11,9 @@
 #define SVC_INST_ID                 0
 
 /* The max length of characteristic value. When the GATT client performs a write or prepare write operation,
-*  the data length must be less than GATTS_DEMO_CHAR_VAL_LEN_MAX.
+*  the data length must be less than GATTS_CHAR_VAL_LEN_MAX.
 */
-#define GATTS_DEMO_CHAR_VAL_LEN_MAX 500
+#define GATTS_CHAR_VAL_LEN_MAX 500
 #define PREPARE_BUF_MAX_SIZE        1024
 #define CHAR_DECLARATION_SIZE       (sizeof(uint8_t))
 
@@ -147,7 +147,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_EQ_GAINS_VAL] =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_EQ_GAINS_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_equalizer_gains), (uint8_t *)temp_equalizer_gains}},
+      GATTS_CHAR_VAL_LEN_MAX, sizeof(temp_equalizer_gains), (uint8_t *)temp_equalizer_gains}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_EQ_ENABLE]     =
@@ -156,7 +156,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_EQ_ENABLE_VAL] =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_EQ_ENABLE_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_equalizer_enable), (uint8_t *)&temp_equalizer_enable}},
+      GATTS_CHAR_VAL_LEN_MAX, sizeof(temp_equalizer_enable), (uint8_t *)&temp_equalizer_enable}},
 
     /* Client Characteristic Configuration Descriptor */
     // [IDX_CHAR_CFG_A]  =
@@ -170,7 +170,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_MIXER_INPUT_GAINS_VAL]  =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_MIXER_INPUT_GAINS_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_source_gains), (uint8_t *)temp_source_gains}},
+      GATTS_CHAR_VAL_LEN_MAX, sizeof(temp_source_gains), (uint8_t *)temp_source_gains}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_MIXER_ENABLE_JACK_IN]      =
@@ -179,7 +179,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_MIXER_ENABLE_JACK_IN_VAL]  =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_MIXER_ENABLE_JACK_IN_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_mixer_enable_line_in), (uint8_t *)&temp_mixer_enable_line_in}},
+      GATTS_CHAR_VAL_LEN_MAX, sizeof(temp_mixer_enable_line_in), (uint8_t *)&temp_mixer_enable_line_in}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN]      =
@@ -188,7 +188,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN_VAL]  =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_MIXER_ENABLE_BLUETOOTH_A2DP_IN_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_mixer_enable_bluetooth_a2dp_in), (uint8_t *)&temp_mixer_enable_bluetooth_a2dp_in}},
+      GATTS_CHAR_VAL_LEN_MAX, sizeof(temp_mixer_enable_bluetooth_a2dp_in), (uint8_t *)&temp_mixer_enable_bluetooth_a2dp_in}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_PROFILE_INDEX]      =
@@ -197,7 +197,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_PROFILE_INDEX_VAL]  =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_PROFILE_INDEX_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_current_profile_idx), (uint8_t *)&temp_current_profile_idx}},
+      GATTS_CHAR_VAL_LEN_MAX, sizeof(temp_current_profile_idx), (uint8_t *)&temp_current_profile_idx}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_PROFILE_SAVE]      =
@@ -206,7 +206,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_PROFILE_SAVE_VAL]  =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_PROFILE_SAVE_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_current_profile_save), (uint8_t *)&temp_current_profile_save}},
+      GATTS_CHAR_VAL_LEN_MAX, sizeof(temp_current_profile_save), (uint8_t *)&temp_current_profile_save}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_PROFILE_LOAD]      =
@@ -215,7 +215,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_PROFILE_LOAD_VAL]  =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_PROFILE_LOAD_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_current_profile_load), (uint8_t *)&temp_current_profile_load}},
+      GATTS_CHAR_VAL_LEN_MAX, sizeof(temp_current_profile_load), (uint8_t *)&temp_current_profile_load}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_DEVICENAME]      =
@@ -224,7 +224,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_DEVICENAME_VAL]  =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_DEVICENAME_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_device_name), (uint8_t *)&temp_device_name}},
+      GATTS_CHAR_VAL_LEN_MAX, sizeof(temp_device_name), (uint8_t *)&temp_device_name}},
 
     /* Characteristic Declaration */
     [IDX_CHAR_OUTPUT_GAIN]      =
@@ -233,7 +233,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_OUTPUT_GAIN_VAL]  =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_OUTPUT_GAIN_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(temp_output_gain), (uint8_t *)&temp_output_gain}},
+      GATTS_CHAR_VAL_LEN_MAX, sizeof(temp_output_gain), (uint8_t *)&temp_output_gain}},
 };
 
 void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
@@ -485,7 +485,7 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
        	    break;
         case ESP_GATTS_WRITE_EVT:
             if (!param->write.is_prep){
-                // the data length of gattc write  must be less than GATTS_DEMO_CHAR_VAL_LEN_MAX.
+                // the data length of gattc write  must be less than GATTS_CHAR_VAL_LEN_MAX.
                 ESP_LOGI(GATT_TAG, "GATT_WRITE_EVT, handle = %d, value len = %d, value :", param->write.handle, param->write.len);
                 esp_log_buffer_hex(GATT_TAG, param->write.value, param->write.len);
                 // -----------------------------------------------
@@ -672,7 +672,7 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
             }
       	    break;
         case ESP_GATTS_EXEC_WRITE_EVT:
-            // the length of gattc prepare write data must be less than GATTS_DEMO_CHAR_VAL_LEN_MAX.
+            // the length of gattc prepare write data must be less than GATTS_CHAR_VAL_LEN_MAX.
             ESP_LOGI(GATT_TAG, "ESP_GATTS_EXEC_WRITE_EVT");
             example_exec_write_event_env(&prepare_write_env, param);
             break;
