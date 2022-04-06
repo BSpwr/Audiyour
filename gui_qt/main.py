@@ -189,7 +189,8 @@ class MainUI(Qw.QWidget):
         pass
 
     async def rename_device(self, name):
-        await self.bt_man.rename_device(name)
+        if name and not name.isspace():
+            await self.bt_man.rename_device(name)
 
 
 class DeviceComboBox(Qw.QComboBox):
@@ -204,7 +205,8 @@ class DeviceComboBox(Qw.QComboBox):
     def updateDevices(self, devices):
         self.clear()
         for device in devices:
-            self.addItem(device.name)
+            if device.name:
+                self.addItem(device.name)
 
 class ProfileComboBox(Qw.QComboBox):
     def __init__(self, num_profiles: int, parent=None):
