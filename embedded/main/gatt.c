@@ -109,7 +109,7 @@ static const uint16_t GATTS_CHAR_PROFILE_INDEX_VAL                  = 0xFF06;
 static const uint16_t GATTS_CHAR_PROFILE_SAVE_VAL                   = 0xFF07;
 static const uint16_t GATTS_CHAR_PROFILE_LOAD_VAL                   = 0xFF08;
 static const uint16_t GATTS_CHAR_DEVICENAME_VAL                     = 0xFF09;
-static const uint16_t GATTS_CHAR_OUTPUT_GAIN_VAL                    = 0xFF0A;
+static const uint16_t GATTS_CHAR_VALIDATE_CONNECTION_VAL            = 0xFF0A;
 
 static const uint16_t primary_service_uuid         = ESP_GATT_UUID_PRI_SERVICE;
 static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
@@ -126,11 +126,11 @@ static bool temp_mixer_enable_line_in = true;
 static bool temp_mixer_enable_bluetooth_a2dp_in = true;
 // temp_source_gains[0] is 3.5mm jack, temp_source_gains[1] is bluetooth a2dp
 static float temp_source_gains[2]        = {0x0, 0x0};
-static int8_t temp_output_gain         = 0x0;
 static uint8_t temp_current_profile_idx = 0x0;
 static bool temp_current_profile_load = 0x0;
 static bool temp_current_profile_save = 0x0;
 static device_name_t temp_device_name;
+const static char validate_connection_string[28]         = "__AUDIYOUR_OFFICIAL_DEVICE__";
 
 /* Full Database Description - Used to add attributes into the database */
 static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
@@ -227,13 +227,13 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
       GATTS_CHAR_VAL_LEN_MAX, sizeof(temp_device_name), (uint8_t *)&temp_device_name}},
 
     /* Characteristic Declaration */
-    [IDX_CHAR_OUTPUT_GAIN]      =
+    [IDX_CHAR_VALIDATE_CONNECTION]      =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write}},
     /* Characteristic Value */
-    [IDX_CHAR_OUTPUT_GAIN_VAL]  =
-    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_OUTPUT_GAIN_VAL, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_CHAR_VAL_LEN_MAX, sizeof(temp_output_gain), (uint8_t *)&temp_output_gain}},
+    [IDX_CHAR_VALIDATE_CONNECTION_VAL]  =
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_VALIDATE_CONNECTION_VAL, ESP_GATT_PERM_READ,
+      GATTS_CHAR_VAL_LEN_MAX, sizeof(validate_connection_string), (uint8_t *)&validate_connection_string}},
 };
 
 void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
@@ -467,18 +467,18 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                     esp_gatt_rsp_t rsp;
                     memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
                     rsp.attr_value.handle = param->read.handle;
-                    rsp.attr_value.len = MAX_DEVICENAME_LEN + 1;
+                    rsp.attr_value.len = MAX_DEVICENAME_LEN;
 
                     memcpy(rsp.attr_value.value, &g_device_name.name, rsp.attr_value.len);
                     esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
                             ESP_GATT_OK, &rsp);
-            } else if (gatt_handle_table[IDX_CHAR_OUTPUT_GAIN_VAL] == param->read.handle) {
+            } else if (gatt_handle_table[IDX_CHAR_VALIDATE_CONNECTION_VAL] == param->read.handle) {
                     esp_gatt_rsp_t rsp;
                     memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
                     rsp.attr_value.handle = param->read.handle;
-                    rsp.attr_value.len = 1;
+                    rsp.attr_value.len = sizeof(validate_connection_string);
 
-                    memcpy(rsp.attr_value.value, &temp_output_gain, 1);
+                    memcpy(rsp.attr_value.value, &validate_connection_string, rsp.attr_value.len);
                     esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
                             ESP_GATT_OK, &rsp);
             }
@@ -632,7 +632,18 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                             esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_INVALID_CFG, NULL);
                     }
                 } else if (gatt_handle_table[IDX_CHAR_DEVICENAME_VAL] == param->write.handle) {
-                    bool data_valid = param->write.len <= MAX_DEVICENAME_LEN;
+                    bool data_valid = false;
+
+                    // ensure that we have at least one non whitespace character
+                    for (unsigned i = 0; i < param->write.len; ++i) {
+                        char t = param->write.value[i];
+                        if (t >= '!' && t <= '~') {
+                            data_valid = true;
+                            break;
+                        }
+                    }
+
+                    data_valid &= param->write.len >= 1 && param->write.len <= MAX_DEVICENAME_LEN;
 
                     if (data_valid) {
                         memcpy(temp_device_name.name, param->write.value, param->write.len);
@@ -651,18 +662,9 @@ void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts
                         handle_device_name_change(&temp_device_name);
                     }
 
-                } else if (gatt_handle_table[IDX_CHAR_OUTPUT_GAIN_VAL] == param->write.handle) {
-                    bool data_valid = param->write.len == 1;
-
-                    if (data_valid) {
-                        memcpy(&temp_output_gain, param->write.value, param->write.len);
-                    }
-
+                } else if (gatt_handle_table[IDX_CHAR_VALIDATE_CONNECTION_VAL] == param->write.handle) {
                     /* send response when param->write.need_rsp is true*/
                     if (param->write.need_rsp){
-                        if (data_valid)
-                            esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
-                        else 
                             esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_INVALID_CFG, NULL);
                     }
                 }
