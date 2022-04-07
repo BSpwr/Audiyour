@@ -47,10 +47,20 @@ class _DeviceScreenState extends State<DeviceScreen> {
   bool enableAUX = true;
   bool enableEQ = true;
   String dropdownValue = 'One';
+  String dropdownCustom = 'Preset: Flat';
   List<int> profile = [0];
   List<int> one = [1];
   List<int> freq = [31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
   List<String> source = ['3.5mm Jack', 'Bluetooth'];
+  List<double> Flat = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  List<double>  Dark = [5, 4, 3, 2, 1, -1, -2, -3, -4, -5];
+  List<double>  Bright = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5];
+  List<double>  BassBoost = [6, 5.5, 4.5, 1.5, 0.5, 0, 0, 0, 0, 0];
+  List<double>  BassReduction = [-6, -5.5, -4.5, -1.5, -0.5, 0, 0, 0, 0, 0];
+  List<double>  TrebleBoost = [0, 0, 0, 0, 0, 0, 0.5, 1.5, 5.3, 3.8];
+  List<double>  TrebleReduction = [0, 0, 0, 0, 0, 0, -0.5, -1.5, -5.3, -3.8];
+  List<double>  Loudness = [6, 5.3, 1.6, -1.5, -2.8, -1.5, -4.8, -5, 0.3, 2.5];
+  List<double>  VocalBoost = [-1, -1, -1.1, -0.6, 0.7, 3.1, 4.6, 3.3, 0.6, 0];
   List<int> statusBT = [1];
   List<int> statusAUX = [1];
   List<int> statusEQ = [1];
@@ -405,6 +415,45 @@ class _DeviceScreenState extends State<DeviceScreen> {
     loadProfile();
   }
 
+  //Called when the values are updated in the dropdown menu
+  void updateProfile1(String? newValue) async {
+    dropdownCustom = newValue!;
+
+    if (newValue == 'Preset: Flat') {
+      _services[2].characteristics[4].write(Flat.map((e) => e.toInt()).toList());
+    }
+    else if (newValue == 'Preset: Dark') {
+      _services[2].characteristics[4].write(Dark.map((e) => e.toInt()).toList());
+    }
+    else if (newValue == 'Preset: Bright') {
+      _services[2].characteristics[4].write(Bright.map((e) => e.toInt()).toList());
+    }
+    else if (newValue == 'Preset: Bass Boost') {
+      _services[2].characteristics[4].write(BassBoost.map((e) => e.toInt()).toList());
+    }
+    else if (newValue == 'Preset: Bass Reduction') {
+      _services[2].characteristics[4].write(BassReduction.map((e) => e.toInt()).toList());
+    }
+    else if (newValue == 'Preset: Treble Boost') {
+      _services[2].characteristics[4].write(TrebleBoost.map((e) => e.toInt()).toList());
+    }
+    else if (newValue == 'Preset: Treble Reduction') {
+      _services[2].characteristics[4].write(TrebleReduction.map((e) => e.toInt()).toList());
+    }
+    else if (newValue == 'Preset: Loudness') {
+      _services[2].characteristics[4].write(Loudness.map((e) => e.toInt()).toList());
+    }
+    else if (newValue == 'Preset: Vocal Boost') {
+      _services[2].characteristics[4].write(VocalBoost.map((e) => e.toInt()).toList());
+    }
+    await Future.delayed(const Duration(milliseconds: 1000));
+    //Loads the respective values
+    loadEqualizerGainsFromDevice();
+    await Future.delayed(const Duration(milliseconds: 1000));
+    //Loads the respective values
+    loadEqualizerGainsFromDevice();
+  }
+
   void nameUpdate() async {
     // TODO: Make sure its correct charecteristic
     await _services[2].characteristics[8].write(utf8.encode(deviceNameController.text));
@@ -530,6 +579,18 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       }
                   ),
                   const Spacer(),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          primary: Colors.blue,
+                          padding: const EdgeInsets.fromLTRB(5, 0, 5, 0)
+                      ),
+                      child: const Text('Load From Device') ,
+                      onPressed: () {
+                        loadEqualizerGainsFromDevice();
+                        loadMixerGainsFromDevice();
+                      }
+                  ),
+                  const Spacer(),
                 ],
               ),
               const CustomDivider(text: 'Equalizer'),
@@ -549,43 +610,30 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       }
                   ),
                   const Spacer(),
-                  ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                          primary: Colors.blue,
-                          padding: const EdgeInsets.fromLTRB(5, 0, 5, 0)
-                      ),
-                      child: const Text('Reset'),
-                      onPressed: () {
-                        //Resets values
-                        for (int i = 0; i<10 ;i++) {
-                          widget.equalizerGains[i] = 0.0;
-                        }
-
-                        //Sends 0s as 32-bit FP
-                        var valueFloat = Float32List(10);
-                        int j = 0;
-                        for(var gain in widget.equalizerGains){
-                          valueFloat[j] = gain;
-                          j++;
-                        }
-                        var listOfBytes = valueFloat.buffer.asUint8List();
-                        _services[2].characteristics[0].write(listOfBytes);
-
-                        setState(() {});
-                      }
+                  DropdownButton<String>(
+                    value: dropdownCustom,
+                    elevation: 16,
+                    style: const TextStyle(color: Colors.blue),
+                    underline: Container(
+                      height: 2,
+                      color: Colors.blue,
+                    ),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        updateProfile1(newValue);
+                      });
+                    },
+                    items: <String>['Preset: Flat', 'Preset: Dark', 'Preset: Bright', 'Preset: Bass Boost', 'Preset: Bass Reduction',
+                      'Preset: Treble Boost', 'Preset: Treble Reduction', 'Preset: Loudness', 'Preset: Vocal Boost']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
                   ),
                   const Spacer(),
-                  ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                          primary: Colors.blue,
-                          padding: const EdgeInsets.fromLTRB(5, 0, 5, 0)
-                      ),
-                      child: const Text('Load From Device') ,
-                      onPressed: () {
-                        loadEqualizerGainsFromDevice();
-                        loadMixerGainsFromDevice();
-                      }
-                  ),
+
                   const Spacer(),
                 ],
               ),
@@ -737,7 +785,7 @@ class _EqualizerSlider extends State<EqualizerSlider> {
         myController.text = '10.0';
       }
       else {
-        widget.equalizerGains[widget.index] = double.parse(myController.text);
+        widget.equalizerGains[widget.index] = double.parse((double.parse(myController.text)).toStringAsFixed(1));
       }
 
       //If services and gains are not empty
@@ -863,7 +911,7 @@ class _MixerSlider extends State<MixerSlider> {
         myController.text = '20.0';
       }
       else {
-        widget.mixerGains[widget.index] = double.parse(myController.text);
+        widget.mixerGains[widget.index] = double.parse((double.parse(myController.text)).toStringAsFixed(1));
       }
 
       //If services and gains are not empty, send to board as integers
