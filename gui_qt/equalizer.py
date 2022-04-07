@@ -24,14 +24,9 @@ class Equalizer(Qw.QWidget):
         self.preset_dropdown = EqualizerPresets(self)
         self.preset_dropdown.activated.connect(lambda: self.set_all_gains(self.preset_dropdown.get_preset()))
 
-        # Reset button will reset to flat preset
-        self.set_defaults_btn = Qw.QPushButton(self.string_reset)
-        self.set_defaults_btn.clicked.connect(lambda: self.set_defaults())
-
         self.toolbar_layout = Qw.QHBoxLayout()
         self.toolbar_layout.addWidget(self.set_enable_btn)
         self.toolbar_layout.addWidget(self.preset_dropdown)
-        self.toolbar_layout.addWidget(self.set_defaults_btn)
 
         self.bands_layout = Qw.QHBoxLayout()
 
@@ -94,10 +89,6 @@ class Equalizer(Qw.QWidget):
 
         asyncio.ensure_future(self.parent().parent().bt_man.write_eq_gains(gains))
 
-
-    def set_defaults(self):
-        self.set_all_gains([0 for _ in range(0, 10)])
-        self.preset_dropdown.use_flat()
 
     async def do_band_update(self, band_num, dB):
         await self.parent().parent().bt_man.write_eq_gain_index(band_num, dB)
@@ -209,6 +200,3 @@ class EqualizerPresets(Qw.QComboBox):
 
     def using_custom(self):
         self.setCurrentIndex(-1)
-
-    def use_flat(self):
-        self.setCurrentIndex(0)
