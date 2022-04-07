@@ -402,6 +402,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
   void nameUpdate() async {
     // TODO: Make sure its correct charecteristic
     await _services[2].characteristics[8].write(utf8.encode(deviceNameController.text));
+    disconnect();
   }
 
   @override
@@ -576,6 +577,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       child: const Text('Load From Device') ,
                       onPressed: () {
                         loadEqualizerGainsFromDevice();
+                        loadMixerGainsFromDevice();
                       }
                   ),
                   const Spacer(),
@@ -631,23 +633,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   const Spacer(),
                   ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                          primary: enableBT ? Colors.blue : Colors.transparent,
-                          padding: const EdgeInsets.fromLTRB(5, 0, 5, 0)
-                      ),
-                      child: enableBT ? const Text('Disable Bluetooth Input') : const Text('Enable Bluetooth Input'),
-                      onPressed: () {
-                        bluetoothInputToggle();
-                      }
-                  ),
-                  const Spacer(),
-                ],
-              ),
-              Row (
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Spacer(),
-                  ElevatedButton(
-                      style: ElevatedButton.styleFrom(
                           primary: Colors.blue,
                           padding: const EdgeInsets.fromLTRB(5, 0, 5, 0)
                       ),
@@ -674,12 +659,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   const Spacer(),
                   ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                          primary: Colors.blue,
+                          primary: enableBT ? Colors.blue : Colors.transparent,
                           padding: const EdgeInsets.fromLTRB(5, 0, 5, 0)
                       ),
-                      child: const Text('Load From Device') ,
+                      child: enableBT ? const Text('Disable Bluetooth Input') : const Text('Enable Bluetooth Input'),
                       onPressed: () {
-                        //loadMixerGainsFromDevice();
+                        bluetoothInputToggle();
                       }
                   ),
                   const Spacer(),
@@ -787,11 +772,11 @@ class _EqualizerSlider extends State<EqualizerSlider> {
             value: widget.equalizerGains[widget.index],
             max: 10,
             min: -20,
-            divisions: 30,
+            divisions: 300,
             onChanged: (double value) {
               setState(() {
                 //Forces a call to _setSliderValue with change
-                myController.text = value.toString();
+                myController.text = (value).toStringAsFixed(1);
               });
             },
           ),
@@ -941,11 +926,11 @@ class _MixerSlider extends State<MixerSlider> {
           value: widget.mixerGains[widget.index],
           max: 20,
           min: -40,
-          divisions: 60,
+          divisions: 600,
           onChanged: (double value) {
             setState(() {
               //Forces a call to _setSliderValue with change
-              myController.text = value.toString();
+              myController.text = (value).toStringAsFixed(1);
             });
           },
         ),
