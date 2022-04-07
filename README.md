@@ -28,7 +28,7 @@ The Audiyour Control app for desktop is built on the Qt5 toolkit and is written 
         - sudo pacman -S qt5-base
     - Windows
         - https://www.qt.io/download-thank-you?os=windows
-- Install Python dependencies using `pip install -r requriements.txt`
+- Install Python dependencies using `pip install -r requirements.txt`
   - Optionally, create a fresh venv for installing dependencies into
     - Linux
         - `python3 -m venv venv`
