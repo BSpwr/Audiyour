@@ -154,6 +154,7 @@ class ConnectionSettingsUI(Qw.QDialog):
         super().__init__(parent)
 
         self.setWindowTitle('Audiyour Connection Settings')
+        self.setWindowFlag(Qc.Qt.WindowContextHelpButtonHint, on=False)
 
         # Holds scanned devices
         self.devices = {}
