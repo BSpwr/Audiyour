@@ -201,7 +201,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     }
     var listOfBytes = floatList.buffer.asUint8List();
     _services[2].characteristics[0].write(listOfBytes, withoutResponse: false);
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 250));
   }
 
   //Sends mixer gain values to the device
@@ -214,14 +214,15 @@ class _DeviceScreenState extends State<DeviceScreen> {
     }
     var listOfBytes = floatList.buffer.asUint8List();
     _services[2].characteristics[2].write(listOfBytes, withoutResponse: false);
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 250));
   }
 
   //Loads equalizer gain values to the device
   void loadEqualizerGainsFromDevice() async {
     //Read values of Equalizer and Mixer gains
+    await Future.delayed(const Duration(milliseconds: 250));
     List<int> tempGain = await _services[2].characteristics[0].read();
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 500));
 
     //Converts bytes received to float32
     final bytes = Uint8List.fromList(tempGain);
@@ -241,8 +242,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
   //Loads mixer gain values to the device
   void loadMixerGainsFromDevice() async {
     //Read values of Equalizer and Mixer gains
+    await Future.delayed(const Duration(milliseconds: 500));
     List<int> tempGain = await _services[2].characteristics[2].read();
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 250));
 
     //Converts bytes received to float32
     final bytes = Uint8List.fromList(tempGain);
@@ -260,8 +262,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
   //Loads bluetooth input status
   void loadBluetoothInputStatus() async {
+    await Future.delayed(const Duration(milliseconds: 250));
     statusBT = await _services[2].characteristics[4].read();
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 250));
 
     setState(() {
       if (statusBT[0] == 1) {
@@ -275,8 +278,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
   //Loads AUX input status
   void loadAUXInputStatus() async {
+    await Future.delayed(const Duration(milliseconds: 250));
     statusAUX = await _services[2].characteristics[3].read();
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 250));
 
     setState(() {
       if (statusAUX[0] == 1) {
@@ -293,13 +297,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
     //Writes one to load profile characteristic
     _services[2].characteristics[7].write(one, withoutResponse: false);
     List<int> temp = [1];
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 250));
 
     print("This is the received: ${temp[0]}");
     while (temp[0] == 1){
       print("About to receive");
+      await Future.delayed(const Duration(milliseconds: 250));
       temp = await _services[2].characteristics[7].read();
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 250));
       print("This is the received delayed: ${temp[0]}");
     }
     print("Read values");
@@ -321,7 +326,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
 
     _services[2].characteristics[6].write(one, withoutResponse: false);
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 250));
   }
 
   //Enables/Disables the equalizer
@@ -336,6 +341,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       }
       enableEQ = !enableEQ;
     });
+    await Future.delayed(const Duration(milliseconds: 250));
   }
 
   //Enables/Disables the AUX input
@@ -350,7 +356,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       }
       enableAUX = !enableAUX;
     });
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 250));
   }
 
   //Enables/Disables the bluetooth input
@@ -365,7 +371,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       }
       enableBT = !enableBT;
     });
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 250));
   }
 
   //Called when the values are updated in the dropdown menu
@@ -390,10 +396,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
     //Sends the updated profile to the device
     _services[2].characteristics[5].write(profile, withoutResponse: false);
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 250));
 
     _services[2].characteristics[5].write(profile, withoutResponse: false);
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 250));
 
     //Loads the respective values
     loadProfile();
