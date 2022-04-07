@@ -110,7 +110,7 @@ class Mixer(Qw.QWidget):
 
     async def do_band_update(self, band_num, dB):
         await self.parent().parent().bt_man.write_mix_gain_index(band_num, int(dB))
-        self.parent().parent().update_conn_status()
+        self.parent().parent().connection_settings_ui.update_conn_status_basic()
 
 
 class MixerBand(Qw.QWidget):
