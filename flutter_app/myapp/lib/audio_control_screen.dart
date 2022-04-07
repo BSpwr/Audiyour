@@ -419,33 +419,75 @@ class _DeviceScreenState extends State<DeviceScreen> {
   void updateProfile1(String? newValue) async {
     dropdownCustom = newValue!;
 
+
+
     if (newValue == 'Preset: Flat') {
-      _services[2].characteristics[4].write(Flat.map((e) => e.toInt()).toList());
+      //Converts casts values to int8
+      for (int i = 0; i<9 ;i++) {
+        widget.equalizerGains[i] = Flat[i];
+      }
     }
     else if (newValue == 'Preset: Dark') {
-      _services[2].characteristics[4].write(Dark.map((e) => e.toInt()).toList());
+      //Converts casts values to int8
+      for (int i = 0; i<9 ;i++) {
+        widget.equalizerGains[i] = Dark[i];
+      }
     }
     else if (newValue == 'Preset: Bright') {
-      _services[2].characteristics[4].write(Bright.map((e) => e.toInt()).toList());
+      //Converts casts values to int8
+      for (int i = 0; i<9 ;i++) {
+        widget.equalizerGains[i] = Bright[i];
+      }
     }
     else if (newValue == 'Preset: Bass Boost') {
-      _services[2].characteristics[4].write(BassBoost.map((e) => e.toInt()).toList());
+      //Converts casts values to int8
+      for (int i = 0; i<9 ;i++) {
+        widget.equalizerGains[i] = BassBoost[i];
+      }
     }
     else if (newValue == 'Preset: Bass Reduction') {
-      _services[2].characteristics[4].write(BassReduction.map((e) => e.toInt()).toList());
+      //Converts casts values to int8
+      for (int i = 0; i<9 ;i++) {
+        widget.equalizerGains[i] = BassReduction[i];
+      }
     }
     else if (newValue == 'Preset: Treble Boost') {
-      _services[2].characteristics[4].write(TrebleBoost.map((e) => e.toInt()).toList());
+      //Converts casts values to int8
+      for (int i = 0; i<9 ;i++) {
+        widget.equalizerGains[i] = TrebleBoost[i];
+      }
     }
     else if (newValue == 'Preset: Treble Reduction') {
-      _services[2].characteristics[4].write(TrebleReduction.map((e) => e.toInt()).toList());
+      //Converts casts values to int8
+      for (int i = 0; i<9 ;i++) {
+        widget.equalizerGains[i] = TrebleReduction[i];
+      }
     }
     else if (newValue == 'Preset: Loudness') {
-      _services[2].characteristics[4].write(Loudness.map((e) => e.toInt()).toList());
+      //Converts casts values to int8
+      for (int i = 0; i<9 ;i++) {
+        widget.equalizerGains[i] = Loudness[i];
+      }
     }
     else if (newValue == 'Preset: Vocal Boost') {
-      _services[2].characteristics[4].write(VocalBoost.map((e) => e.toInt()).toList());
+      //Converts casts values to int8
+      for (int i = 0; i<9 ;i++) {
+        widget.equalizerGains[i] = VocalBoost[i];
+      }
     }
+
+    //Sends 0s as 32-bit FP
+    var valueFloat = Float32List(2);
+    int j = 0;
+    for(var gain in widget.mixerGains){
+      valueFloat[j] = gain;
+      j++;
+    }
+
+    var listOfBytes = valueFloat.buffer.asUint8List();
+    _services[2].characteristics[0].write(listOfBytes);
+    setState(() {});
+
     await Future.delayed(const Duration(milliseconds: 1000));
     //Loads the respective values
     loadEqualizerGainsFromDevice();
@@ -619,8 +661,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       color: Colors.blue,
                     ),
                     onChanged: (String? newValue) {
+                      updateProfile1(newValue);
                       setState(() {
-                        updateProfile1(newValue);
+
                       });
                     },
                     items: <String>['Preset: Flat', 'Preset: Dark', 'Preset: Bright', 'Preset: Bass Boost', 'Preset: Bass Reduction',
