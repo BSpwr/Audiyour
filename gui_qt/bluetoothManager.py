@@ -12,13 +12,16 @@ class BluetoothManager:
         self.AUDIYOUR_CONFIG_SERVICE = '000000ff-0000-1000-8000-00805f9b34fb'
         self.EQUALIZER_GAINS_CHARACTERISTIC = '0000ff01-0000-1000-8000-00805f9b34fb'
         self.EQUALIZER_ENABLE_CHARACTERISTIC = '0000ff05-0000-1000-8000-00805f9b34fb'
-        self.MIXER_GAINS_CHARACTERISTIC = '0000ff02-0000-1000-8000-00805f9b34fb' 
+        self.MIXER_GAINS_CHARACTERISTIC = '0000ff02-0000-1000-8000-00805f9b34fb'
         self.MIXER_LINE_IN_ENABLE_CHARACTERISTIC = '0000ff03-0000-1000-8000-00805f9b34fb' 
         self.MIXER_WIRELESS_ENABLE_CHARACTERISTIC = '0000ff04-0000-1000-8000-00805f9b34fb'
         self.PROFILE_INDEX_CHARACTERISTIC = '0000ff06-0000-1000-8000-00805f9b34fb'
         self.PROFILE_SAVE_CHARACTERISTIC = '0000ff07-0000-1000-8000-00805f9b34fb'
         self.PROFILE_LOAD_CHARACTERISTIC = '0000ff08-0000-1000-8000-00805f9b34fb'
         self.DEVICENAME_CHARACTERISTIC = '0000ff09-0000-1000-8000-00805f9b34fb'
+        self.VALIDATE_CONNECTION_CHARACTERISTIC = '0000ff0a-0000-1000-8000-00805f9b34fb'
+
+        self.VALIDATE_CONNECTION_STRING = '__AUDIYOUR_OFFICIAL_DEVICE__'
 
         self.eq_gains: list[float] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.eq_enable = False
@@ -61,14 +64,21 @@ class BluetoothManager:
             return self.client.is_connected
         return False
 
+    async def check_valid_connection(self):
+        await self.connect()
+        if self.client is None or not self.client.is_connected:
+            return
+
+        return (await self.client.read_gatt_char(self.VALIDATE_CONNECTION_CHARACTERISTIC)).decode() == self.VALIDATE_CONNECTION_STRING
+
 
     async def disconnect(self):
         if self.client is not None and self.client.is_connected:
             await self.client.disconnect()
 
 
-    async def discover_availiable_devices(self) -> List[bleak.backends.device.BLEDevice]:
-        return await self.scanner.discover(timeout=4)
+    async def discover_availiable_devices(self, timeout: int) -> List[bleak.backends.device.BLEDevice]:
+        return await self.scanner.discover(timeout=timeout)
 
 
     async def rename_device(self, name):

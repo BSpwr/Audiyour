@@ -100,9 +100,8 @@ class Equalizer(Qw.QWidget):
         self.preset_dropdown.use_flat()
 
     async def do_band_update(self, band_num, dB):
-
         await self.parent().parent().bt_man.write_eq_gain_index(band_num, dB)
-        self.parent().parent().update_conn_status()
+        self.parent().parent().connection_settings_ui.update_conn_status_basic()
 
 class EqualizerBand(Qw.QWidget):
     def __init__(self, center_freq: str, parent=None):
